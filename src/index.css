@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Rajdhani:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&display=swap');
+@import 'tailwindcss';
+
+/* vscode-hide-unknown-at-rules */
+@theme {
+  --font-display: 'Rajdhani', 'Exo 2', system-ui, sans-serif;
+  --font-body: 'Outfit', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;
+}
+
+:root {
+  --rounded-lg: 16px;
+  --rounded-xl: 20px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%; height: 100%;
+  margin: 0; padding: 0;
+  background: #05020f;
+  color: #e0f7ff;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.22); border-radius: 2px; }
+
+/* ── Range sliders ──────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.07);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--thumb-color, #00f5ff);
+  box-shadow: 0 0 8px var(--thumb-color, #00f5ff), 0 0 2px rgba(0,0,0,0.6);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); }
+input[type="range"]::-moz-range-thumb {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--thumb-color, #00f5ff);
+  box-shadow: 0 0 8px var(--thumb-color, #00f5ff);
+  border: none; cursor: pointer;
+}
+
+/* ── Text inputs ────────────────────────────────────────── */
+input[type="text"].neon-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid rgba(0,245,255,0.3);
+  color: #e0f7ff;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  padding: 4px 2px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+input[type="text"].neon-input:focus {
+  border-bottom-color: #00f5ff;
+  text-shadow: 0 0 8px rgba(0,245,255,0.4);
+}
+
+/* ── Color input ────────────────────────────────────────── */
+input[type="color"] {
+  -webkit-appearance: none;
+  border: none; padding: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  background: none;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+/* ── Cyberpunk Background Animations ────────────────────── */
+@keyframes grid-move {
+  0% { transform: rotateX(60deg) translateY(0px); }
+  100% { transform: rotateX(60deg) translateY(40px); }
+}
+
+.animate-cyber-grid {
+  animation: grid-move 2s linear infinite !important;
+}
+
+@keyframes efb-float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-16px); }
+  100% { transform: translateY(0px); }
+}
+
+.efb-orb-animated {
+  animation: efb-float 8s ease-in-out infinite;
+}
+
+.scanlines-overlay {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.35) 50%
+  );
+  background-size: 100% 4px;
+}
+
+/* ── Game Animations ────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes ball-float {
+  0%, 100% { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 18px rgba(255,255,255,0.6)); }
+  50%       { filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 30px rgba(255,255,255,0.9)); }
+}
+@keyframes btn-pulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(0,245,255,0.18); }
+  50%       { box-shadow: 0 0 30px rgba(0,245,255,0.38); }
+}
+@keyframes btn-pulse-green {
+  0%, 100% { box-shadow: 0 0 18px rgba(57,255,90,0.2); }
+  50%       { box-shadow: 0 0 30px rgba(57,255,90,0.42); }
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes goal-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.72); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
