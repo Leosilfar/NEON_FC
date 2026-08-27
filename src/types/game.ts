@@ -7,7 +7,7 @@ export type PieceType =
   | "line";
 
 export type Team = "A" | "B";
-export type Screen = "menu" | "settings" | "builder" | "match";
+export type Screen = "SPLASH" | "MAIN" | "SETTINGS" | "EDITAR" | "ELENCO" | "STATS" | "PLAY";
 export type Role = "GOL" | "ZAG" | "LAT" | "VOL" | "MEI" | "ATA";
 
 export interface GPiece {

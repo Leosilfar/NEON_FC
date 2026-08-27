@@ -26,16 +26,10 @@ export default function TacticalField({
   const nodes = computeTacticalUiPositions(roles);
   const gkCount = countGKs(roles);
 
-  // Pega a imagem do settings (se houver) ou usa o gradiente padrão como fallback
-  const backgroundStyle = settings.background
-    ? {
-        backgroundImage: `url(${settings.background})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }
-    : {
-        background: "linear-gradient(180deg,rgba(5,8,20,0.94),rgba(5,2,18,0.98))",
-      };
+  // Usa um fundo de gradiente padrão
+  const backgroundStyle = {
+    background: "linear-gradient(180deg,rgba(5,8,20,0.94),rgba(5,2,18,0.98))",
+  };
 
   return (
     <div
@@ -202,7 +196,7 @@ export default function TacticalField({
                           type={piece.type}
                           size={22}
                           color={settings.pieceColors[piece.type]}
-                          glowLevel={Math.max(settings.glowIntensity, 1.5)}
+                          glowLevel={Math.max(settings.glowIntensity as any, 1.5)}
                         />
                       </motion.div>
                     ) : (

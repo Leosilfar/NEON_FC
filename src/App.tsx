@@ -1,165 +1,90 @@
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import type { GameSettings, Screen, SlotPiece } from "@/types";
-import { loadSettings, saveSettings } from "@/utils/settingsStorage";
-import Background from "@/components/Background";
-import MainMenu from "@/components/screens/MainMenu";
-import SettingsScreen from "@/components/screens/SettingsScreen";
-import TeamBuilder from "@/components/team-builder/TeamBuilder";
-import Match from "@/components/match/Match";
+import { useContext, useState, useEffect } from 'react';
+import { GameContext } from '@/context/GameContext';
+import Match from './components/match/Match';
+import SplashScreen from './components/Menu/SplashScreen';
+import MainScreen from './components/Menu/MainScreen';
+import SettingsScreen from './components/Menu/SettingsScreen';
+import EditMenu from './components/Menu/EditScreen';
+import ElencoScreen from './components/Menu/ElencoScreen';
+import StatsScreen from './components/Menu/StatsScreen';
 
-// Animações de transição suavizadas
-const pageVariants = {
-  initial: {
-    opacity: 0,
-    scale: 0.97,
-  },
-  animate: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.3,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-  exit: {
-    opacity: 0,
-    scale: 1.03,
-    transition: {
-      duration: 0.2,
-      ease: "easeIn",
-    },
-  },
+const FpsCounter = () => {
+  const [fps, setFps] = useState(60);
+  useEffect(() => {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animId: number;
+    const update = () => {
+      frameCount++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        setFps(frameCount);
+        frameCount = 0;
+        lastTime = now;
+      }
+      animId = requestAnimationFrame(update);
+    };
+    animId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+  return (
+    <div className="fixed top-4 left-4 z-50 font-mono text-xs font-bold text-[#00f0ff] bg-black/80 px-3 py-1 rounded border border-[#00f0ff]/40 shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+      FPS: {fps}
+    </div>
+  );
 };
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("menu");
-  const [playerSlots, setPlayerSlots] = useState<SlotPiece[]>([]);
-  const [settings, setSettings] = useState<GameSettings>(loadSettings);
+  const { screen, setScreen, settings, playerSlots } = useContext(GameContext)!;
+  const [showFps, setShowFps] = useState(false);
 
-  function handleSave(s: GameSettings) {
-    setSettings(s);
-    saveSettings(s);
+  let menuContent = null;
+  switch (screen) {
+    case 'SPLASH':
+      menuContent = <SplashScreen />;
+      break;
+    case 'MAIN':
+      menuContent = <MainScreen />;
+      break;
+    case 'SETTINGS':
+      menuContent = <SettingsScreen onBack={() => setScreen('MAIN')} showFps={showFps} setShowFps={setShowFps} />;
+      break;
+    case 'EDITAR':
+      menuContent = <EditMenu onBack={() => setScreen('MAIN')} />;
+      break;
+    case 'ELENCO':
+      menuContent = <ElencoScreen onBack={() => setScreen('MAIN')} />;
+      break;
+    case 'STATS':
+      menuContent = <StatsScreen onBack={() => setScreen('MAIN')} />;
+      break;
+    default:
+      menuContent = <MainScreen />;
   }
 
-  const bg =
-    "radial-gradient(1200px 600px at 10% 20%, rgba(255,0,128,0.06), transparent 12%), radial-gradient(800px 500px at 85% 80%, rgba(0,240,255,0.05), transparent 10%), linear-gradient(180deg, #0d102d 0%, #120c38 60%, #060818 100%)";
-
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        position: "relative",
-        overflow: "hidden",
-        background: bg,
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      {/* Background animado ativo APENAS nas telas de menu e configurações */}
-      {screen !== "match" && screen !== "builder" && <Background />}
-
-      {/* Grade embutida desativada na partida e no montador de time */}
-      {settings.showGrid && screen !== "match" && screen !== "builder" && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            zIndex: 0,
-            backgroundImage: `linear-gradient(${settings.accentColor}28 1px,transparent 1px),linear-gradient(90deg,${settings.accentColor}28 1px,transparent 1px)`,
-            backgroundSize: "28px 28px",
-          }}
-        />
+    <div className="relative w-screen h-screen overflow-hidden bg-black">
+      {showFps && <FpsCounter />}
+      {screen !== 'PLAY' && (
+        <>
+          <div className="absolute inset-0 bg-[url('/background.png')] bg-cover bg-center z-0 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent pointer-events-none z-10"></div>
+          <div className="relative z-20 w-full h-full">{menuContent}</div>
+          {settings.showGrid && (
+            <div className="fixed inset-0 pointer-events-none z-40 bg-[linear-gradient(to_right,rgba(0,240,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,240,255,0.08)_1px,transparent_1px)] bg-[size:40px_40px]" />
+          )}
+          {settings.showScanlines && (
+            <div
+              className="fixed inset-0 pointer-events-none z-50 opacity-30"
+              style={{
+                background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%)',
+                backgroundSize: '100% 4px',
+              }}
+            />
+          )}
+        </>
       )}
-
-      {settings.showScanlines && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            zIndex: 99,
-            background:
-              "repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.065) 3px,rgba(0,0,0,0.065) 4px)",
-          }}
-        />
-      )}
-
-      <div style={{ position: "relative", zIndex: 1, width: "100%", height: "100%" }}>
-        <AnimatePresence mode="wait">
-          {screen === "menu" && (
-            <motion.div
-              key="menu"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="w-full h-full"
-            >
-              <MainMenu
-                onStart={() => setScreen("builder")}
-                onSettings={() => setScreen("settings")}
-                settings={settings}
-              />
-            </motion.div>
-          )}
-
-          {screen === "settings" && (
-            <motion.div
-              key="settings"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="w-full h-full"
-            >
-              <SettingsScreen
-                settings={settings}
-                onSave={handleSave}
-                onBack={() => setScreen("menu")}
-              />
-            </motion.div>
-          )}
-
-          {screen === "builder" && (
-            <motion.div
-              key="builder"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="w-full h-full"
-            >
-              <TeamBuilder
-                onBack={() => setScreen("menu")}
-                onStart={(s) => {
-                  setPlayerSlots(s);
-                  setScreen("match");
-                }}
-                settings={settings}
-              />
-            </motion.div>
-          )}
-
-          {screen === "match" && (
-            <motion.div
-              key="match"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="w-full h-full"
-            >
-              <Match
-                playerSlots={playerSlots}
-                onExit={() => setScreen("menu")}
-                settings={settings}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {screen === 'PLAY' && <Match playerSlots={playerSlots} settings={settings} onExit={() => setScreen('MAIN')} />}
     </div>
   );
 }

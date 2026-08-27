@@ -42,3 +42,6 @@ export const TEAM_A_START = [
   { x: 370, y: VH * 0.4 },
   { x: 370, y: VH * 0.68 },
 ];
+
+// Alias for compatibility
+export const FORMATIONS = FORMATION_PRESETS;

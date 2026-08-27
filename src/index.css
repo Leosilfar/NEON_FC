@@ -96,7 +96,6 @@ input[type="color"]::-webkit-color-swatch {
   0% { transform: rotateX(60deg) translateY(0px); }
   100% { transform: rotateX(60deg) translateY(40px); }
 }
-
 .animate-cyber-grid {
   animation: grid-move 2s linear infinite !important;
 }
@@ -106,7 +105,6 @@ input[type="color"]::-webkit-color-swatch {
   50% { transform: translateY(-16px); }
   100% { transform: translateY(0px); }
 }
-
 .efb-orb-animated {
   animation: efb-float 8s ease-in-out infinite;
 }
@@ -148,4 +146,44 @@ input[type="color"]::-webkit-color-swatch {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.72); }
   55%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ── Blink animation for splash screen text ───────────────────── */
+@keyframes neonPowerOn {
+  0% {
+    opacity: 0;
+    filter: brightness(3) drop-shadow(0 0 60px #00f0ff);
+    transform: scale(0.94);
+  }
+  25% {
+    opacity: 0.3;
+    filter: brightness(0.4);
+  }
+  45% {
+    opacity: 0.9;
+    filter: brightness(2.5) drop-shadow(0 0 40px #ff007f);
+    transform: scale(1.01);
+  }
+  65% {
+    opacity: 0.5;
+    filter: brightness(0.7);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+.animate-neon-on {
+  animation: neonPowerOn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Blink animation for splash screen text ───────────────────── */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 1s step-end infinite;
 }

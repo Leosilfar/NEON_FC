@@ -21,7 +21,7 @@ export type BgPreset =
   | "deep-red"
   | "white";
 
-export type GlowLevel = "low" | "medium" | "high";
+export type GlowLevel = "low" | "medium" | "high" | number;
 
 export interface TeamSettings {
   name: string;
@@ -36,6 +36,7 @@ export interface PieceAttrs {
 }
 
 export interface GameSettings {
+  showFps?: boolean;
   pieceColors: Record<PieceType, string>;
   fieldLineColor: string;
   fieldSurfaceColor: string;
@@ -44,9 +45,14 @@ export interface GameSettings {
   teamB: TeamSettings;
   attrs: Record<PieceType, PieceAttrs>;
   accentColor: string;
-  glowIntensity: GlowLevel;
+  glowIntensity: GlowLevel | number;
   showScanlines: boolean;
   showGrid: boolean;
+  masterVolume?: number;
+  musicVolume?: number;
+  sfxVolume?: number;
+  language?: string;
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 export interface PaletteEntry {

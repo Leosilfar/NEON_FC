@@ -63,13 +63,13 @@ export default function AppearanceTab({
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: "0.15em",
-                  boxShadow:
-                    draft.glowIntensity === g ? `0 0 ${glowSz[g]}px ${accentColor}44` : "none",
+boxShadow:
+                      draft.glowIntensity === g ? `0 0 ${glowSz[g as keyof typeof glowSz]}px ${accentColor}44` : "none",
                   textShadow: draft.glowIntensity === g ? `0 0 8px ${accentColor}` : "none",
                   transition: "all 0.2s",
                 }}
               >
-                {labels[g]}
+                {(labels as any)[g]}
               </button>
             );
           })}

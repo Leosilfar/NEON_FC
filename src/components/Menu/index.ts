@@ -1,0 +1,10 @@
+export { default as AppearanceTab } from "./AppearanceTab";
+export { default as TeamATab } from "./TeamATab";
+export { default as FieldTab } from "./FieldTab";
+export { default as PiecesTab } from "./PiecesTab";
+export { default as SplashScreen } from "./SplashScreen";
+export { default as MainScreen } from "./MainScreen";
+export { default as EditScreen } from "./EditScreen";
+export { default as ElencoScreen } from "./ElencoScreen";
+export { default as StatsScreen } from "./StatsScreen";
+export { default as SettingsScreen } from "./SettingsScreen";
