@@ -1,9 +1,14 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { ALL_ROLES } from "@/constants";
-import type { GameSettings, PieceType, Role, SlotPiece } from "@/types";
-import { PieceSVG } from "@/components/common";
-import { computeTacticalUiPositions } from "@/utils/tactics";
-import { countGKs } from "@/utils/validators";
+import { motion, AnimatePresence } from "framer-motion"
+
+import { ALL_ROLES } from "@/constants"
+
+import type { GameSettings, PieceType, Role, SlotPiece } from "@/types"
+
+import { PieceSVG } from "@/components/common"
+
+import { computeTacticalUiPositions } from "@/utils/tactics"
+
+import { countGKs } from "@/utils/validators"
 
 export default function TacticalField({
   slots,
@@ -13,33 +18,36 @@ export default function TacticalField({
   onPlace,
   onRemove,
   onChangeRole,
+  onSlotClick,
 }: {
-  slots: (SlotPiece | null)[];
-  roles: Role[];
-  selectedType: PieceType | null;
-  settings: GameSettings;
-  onPlace: (index: number, type: PieceType) => void;
-  onRemove: (index: number) => void;
-  onChangeRole: (index: number, role: Role) => void;
+  slots: (SlotPiece | null)[]
+  roles: Role[]
+  selectedType: PieceType | null
+  settings: GameSettings
+  onPlace: (index: number, type: PieceType) => void
+  onRemove: (index: number) => void
+  onChangeRole: (index: number, role: Role) => void
+  onSlotClick?: (index: number) => void
 }) {
-  const ac = settings.accentColor;
-  const nodes = computeTacticalUiPositions(roles);
-  const gkCount = countGKs(roles);
+  const ac = settings.accentColor
 
-  // Usa um fundo de gradiente padrão
+  const nodes = computeTacticalUiPositions(roles)
+
+  const gkCount = countGKs(roles)
+
   const backgroundStyle = {
     background: "linear-gradient(180deg,rgba(5,8,20,0.94),rgba(5,2,18,0.98))",
-  };
+  }
 
   return (
     <div
       style={{
-        flex: "1 1 auto",
+        flex: 1,
+        width: "100%",
+        height: "100%",
         minHeight: 0,
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        margin: "8px 0",
+        flexDirection: "column",
       }}
     >
       <div
@@ -48,8 +56,9 @@ export default function TacticalField({
           width: "100%",
           minWidth: "480px",
           maxWidth: "600px",
-          height: "calc(100vh - 280px)",
-          minHeight: "450px",
+          height: "100%",
+          maxHeight: "100%",
+          minHeight: "400px",
           margin: "0 auto",
           borderRadius: "var(--rounded-xl)",
           border: `1px solid ${ac}22`,
@@ -57,7 +66,7 @@ export default function TacticalField({
           padding: 20,
           paddingBottom: 32,
           overflow: "hidden",
-          ...backgroundStyle, // Aplica o wallpaper selecionado
+          ...backgroundStyle,
         }}
       >
         {/* Camada sutil para escurecer ligeiramente o wallpaper e destacar os elementos neon */}
@@ -82,8 +91,8 @@ export default function TacticalField({
         />
 
         {nodes.map((pos, i) => {
-          const piece = slots[i];
-          const color = piece ? settings.pieceColors[piece.type] : ac;
+          const piece = slots[i]
+          const color = piece ? settings.pieceColors[piece.type] : ac
 
           return (
             <div
@@ -104,13 +113,14 @@ export default function TacticalField({
               <motion.div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
-                  e.preventDefault();
-                  const t = e.dataTransfer.getData("pieceType") as PieceType;
-                  if (t) onPlace(i, t);
+                  e.preventDefault()
+                  const t = e.dataTransfer.getData("pieceType") as PieceType
+                  if (t) onPlace(i, t)
                 }}
                 onClick={() => {
-                  if (selectedType && !slots[i]) onPlace(i, selectedType);
-                  else if (slots[i]) onRemove(i);
+                  if (onSlotClick) onSlotClick(i)
+                  if (selectedType && !slots[i]) onPlace(i, selectedType)
+                  else if (slots[i]) onRemove(i)
                 }}
                 initial={false}
                 animate={
@@ -133,7 +143,7 @@ export default function TacticalField({
                         scale: 1,
                         boxShadow: `0 6px 12px rgba(0,0,0,0.5), 0 0 12px ${ac}14`,
                         borderColor: `${ac}28`,
-                        backgroundColor: "rgba(5, 8, 20, 0.65)", // Ajustado para ter boa visibilidade sobre wallpapers
+                        backgroundColor: "rgba(5, 8, 20, 0.65)",
                       }
                 }
                 transition={{
@@ -161,7 +171,11 @@ export default function TacticalField({
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: [0.8, 0.3, 0.8], scale: [1, 1.1, 1] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 2,
+                      ease: "easeInOut",
+                    }}
                     style={{
                       position: "absolute",
                       inset: -4,
@@ -190,13 +204,20 @@ export default function TacticalField({
                         initial={{ scale: 0, rotate: -45 }}
                         animate={{ scale: 1, rotate: 0 }}
                         exit={{ scale: 0, rotate: 45 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 25,
+                        }}
                       >
                         <PieceSVG
                           type={piece.type}
                           size={22}
                           color={settings.pieceColors[piece.type]}
-                          glowLevel={Math.max(settings.glowIntensity as any, 1.5)}
+                          glowLevel={Math.max(
+                            settings.glowIntensity as any,
+                            1.5,
+                          )}
                         />
                       </motion.div>
                     ) : (
@@ -245,20 +266,21 @@ export default function TacticalField({
                     }}
                   >
                     {ALL_ROLES.map((r) => {
-                      const disableG = r === "GOL" && gkCount > 0 && roles[i] !== "GOL";
+                      const disableG =
+                        r === "GOL" && gkCount > 0 && roles[i] !== "GOL"
                       return (
                         <option key={r} value={r} disabled={disableG}>
                           {r}
                         </option>
-                      );
+                      )
                     })}
                   </select>
                 </div>
               </motion.div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

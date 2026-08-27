@@ -1,35 +1,51 @@
-import type { PieceType, Team, GlowLevel } from "@/types";
+import type { PieceType, Team, GlowLevel } from "@/types"
 
 export function pentagonPts(cx: number, cy: number, r: number): string {
   return Array.from({ length: 5 }, (_, i) => {
-    const a = (i * 72 - 90) * (Math.PI / 180);
-    return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
-  }).join(" ");
+    const a = (i * 72 - 90) * (Math.PI / 180)
+
+    return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
+  }).join(" ")
 }
 
 export function PieceSVG({
   type,
+
   size = 28,
+
   selected = false,
+
   color,
+
   team,
+
   glowLevel = "medium",
 }: {
-  type: PieceType;
-  size?: number;
-  selected?: boolean;
-  color: string;
-  team?: Team;
-  glowLevel?: GlowLevel;
+  type: PieceType
+
+  size?: number
+
+  selected?: boolean
+
+  color: string
+
+  team?: Team
+
+  glowLevel?: GlowLevel
 }) {
-  const c = size / 2;
-  const sw = selected ? 2.8 : 1.8;
-  const glowPx = glowLevel === "low" ? 3 : glowLevel === "high" ? 10 : 5;
-  const glowPx2 = glowLevel === "low" ? 6 : glowLevel === "high" ? 22 : 14;
+  const c = size / 2
+
+  const sw = selected ? 2.8 : 1.8
+
+  const glowPx = glowLevel === "low" ? 3 : glowLevel === "high" ? 10 : 5
+
+  const glowPx2 = glowLevel === "low" ? 6 : glowLevel === "high" ? 22 : 14
+
   const glow = selected
     ? `drop-shadow(0 0 ${glowPx + 2}px ${color}) drop-shadow(0 0 ${glowPx2 + 4}px ${color})`
-    : `drop-shadow(0 0 ${glowPx}px ${color})`;
-  const fill = `${color}18`;
+    : `drop-shadow(0 0 ${glowPx}px ${color})`
+
+  const fill = `${color}18`
 
   return (
     <svg
@@ -38,8 +54,11 @@ export function PieceSVG({
       viewBox={`0 0 ${size} ${size}`}
       style={{
         filter: glow,
+
         overflow: "visible",
+
         display: "block",
+
         flexShrink: 0,
       }}
     >
@@ -157,5 +176,5 @@ export function PieceSVG({
         </>
       )}
     </svg>
-  );
+  )
 }

@@ -1,10 +1,14 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
-import { GameProvider } from '@/context/GameContext'
+import React from "react"
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+import ReactDOM from "react-dom/client"
+
+import App from "./App"
+
+import "./index.css"
+
+import { GameProvider } from "@/context/GameContext"
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <GameProvider>
       <App />

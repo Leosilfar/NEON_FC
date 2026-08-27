@@ -1,54 +1,68 @@
-import { useContext, useState, useEffect } from "react";
-import { GameContext } from "@/context/GameContext";
-import type { GameSettings, PieceType, LogoId, BgPreset } from "@/types";
-import AppearanceTab from "./AppearanceTab";
-import FieldTab from "./FieldTab";
-import TeamATab from "./TeamATab";
-import PiecesTab from "./PiecesTab";
-import { LogoSVG } from "@/components/common/LogoSVG";
-import { PieceSVG } from "@/components/common/PieceSVG";
-import { BG_PRESETS } from "@/constants";
+import { useContext, useState, useEffect } from "react"
+import { GameContext } from "@/context/GameContext"
+import type { GameSettings, PieceType, LogoId, BgPreset } from "@/types"
+import AppearanceTab from "@/components/common/AppearanceTab"
+import FieldTab from "@/components/common/FieldTab"
+import TeamATab from "./TeamATab"
+import PiecesTab from "@/components/common/PiecesTab"
+import { LogoSVG } from "@/components/common/LogoSVG"
+import { PieceSVG } from "@/components/common/PieceSVG"
+import { BG_PRESETS } from "@/constants"
 
 // Exported component name aligns with user reference
 export default function EditMenu({ onBack }: { onBack: () => void }) {
-  const { settings, updateSettings } = useContext(GameContext)!;
+  const { settings, updateSettings } = useContext(GameContext)!
 
   // Local draft state for all edits
-  const [draft, setDraft] = useState<GameSettings>(() => ({ ...settings }));
+  const [draft, setDraft] = useState<GameSettings>(() => ({ ...settings }))
 
   // Selected piece for Pieces tab preview (lifted state)
-  const [previewPiece, setPreviewPiece] = useState<PieceType>("triangle");
+  const [previewPiece, setPreviewPiece] = useState<PieceType>("triangle")
 
   // Active main tab (merged appearance+field)
-  const [activeTab, setActiveTab] = useState<"appearance" | "teamA" | "pieces">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "teamA" | "pieces">(
+    "appearance",
+  )
 
   // Apply accent color globally for neon primary variable
   useEffect(() => {
-    document.documentElement.style.setProperty("--neon-primary", draft.accentColor);
-  }, [draft.accentColor]);
+    document.documentElement.style.setProperty(
+      "--neon-primary",
+      draft.accentColor,
+    )
+  }, [draft.accentColor])
 
   const handleSave = () => {
-    updateSettings(draft);
-    onBack();
-  };
+    updateSettings(draft)
+    onBack()
+  }
 
   // Tab definitions (three tabs)
   const tabs = [
     { key: "appearance" as const, label: "APARÊNCIA" },
     { key: "teamA" as const, label: "TIMES do treino" },
     { key: "pieces" as const, label: "PEÇAS" },
-  ];
+  ]
 
   return (
-    <div className="fixed inset-0 bg-cover bg-center flex flex-col animate-neon-on" style={{ backgroundImage: "url('/assets/background.png')" }}>
+    <div
+      className="fixed inset-0 bg-cover bg-center flex flex-col animate-neon-on"
+      style={{ backgroundImage: "url('/assets/background.png')" }}
+    >
       {/* Header */}
       <header className="flex items-center justify-between bg-[#00f0ff] text-black font-extrabold px-8 py-4 rounded-3xl mx-4 mt-4">
         <h2 className="text-xl">EDITAR E PERSONALIZAR</h2>
         <div className="flex gap-2">
-          <button onClick={onBack} className="bg-[#ff007f] text-white px-6 py-2 rounded-full shadow-[0_0_15px_#ff007f] transition-all duration-200">
+          <button
+            onClick={onBack}
+            className="bg-[#ff007f] text-white px-6 py-2 rounded-full shadow-[0_0_15px_#ff007f] transition-all duration-200"
+          >
             VOLTAR
           </button>
-          <button onClick={handleSave} className="bg-[#ff007f] text-white px-6 py-2 rounded-full shadow-[0_0_15px_#ff007f] transition-all duration-200">
+          <button
+            onClick={handleSave}
+            className="bg-[#ff007f] text-white px-6 py-2 rounded-full shadow-[0_0_15px_#ff007f] transition-all duration-200"
+          >
             SALVAR
           </button>
         </div>
@@ -71,60 +85,98 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
         ))}
       </nav>
 
-       {/* Main layout */}
-       <div className="grid grid-cols-12 gap-6 w-full max-w-7xl mx-auto px-4 flex-1 mt-4 animate-smooth-neon">
-         {activeTab === "appearance" ? (
-           <>
-             {/* Left – Appearance controls (7 cols) */}
-             <section className="col-span-7 space-y-6 overflow-y-auto max-h-[75vh] p-2">
-               <AppearanceTab settings={draft} onChange={setDraft} />
-             </section>
+      {/* Main layout */}
+      <div className="grid grid-cols-12 gap-6 w-full max-w-7xl mx-auto px-4 flex-1 mt-4 animate-smooth-neon">
+        {activeTab === "appearance" ? (
+          <>
+            {/* Left – Appearance controls (7 cols) */}
+            <section className="col-span-7 space-y-6 overflow-y-auto max-h-[75vh] p-2">
+              <AppearanceTab settings={draft} onChange={setDraft} />
+            </section>
 
-             {/* Right – Field controls + compact preview (5 cols) */}
-             <section className="col-span-5 space-y-4">
-               {/* Compact Live Preview */}
-               <div className="h-44 bg-black/60 border border-cyan-500/30 rounded-xl flex items-center justify-center overflow-hidden mb-4">
-                 <div className="relative w-full h-full rounded-md overflow-hidden border" style={{ borderColor: draft.fieldLineColor, background: BG_PRESETS[draft.bgPreset as BgPreset].css }}>
-                   <div className="absolute inset-0" style={{ background: draft.fieldSurfaceColor }} />
-                   <div className="absolute inset-0 flex items-center justify-center gap-4" style={{ color: draft.accentColor, textShadow: `0 0 8px ${draft.accentColor}` }}>
-                     <span className="text-2xl font-mono">△</span>
-                     <span className="text-2xl font-mono">□</span>
-                     <span className="text-2xl font-mono">○</span>
-                   </div>
-                 </div>
-               </div>
-               <FieldTab settings={draft} onChange={setDraft} />
-             </section>
-           </>
-         ) : (
-           <>
-             {/* Left – Other tabs (8 cols) */}
-             <section className={activeTab === "teamA" ? "col-span-12 space-y-6 overflow-y-auto max-h-[75vh] p-2" : "col-span-8 space-y-6 overflow-y-auto max-h-[75vh] p-2"}>
-               {activeTab === "teamA" && <TeamATab settings={draft} onChange={setDraft} />}
-               {activeTab === "pieces" && (
-                 <PiecesTab
-                   settings={draft}
-                   onChange={setDraft}
-                   selectedPieceProp={previewPiece}
-                   setSelectedPieceProp={setPreviewPiece}
-                 />
-               )}
-             </section>
-
-{activeTab !== "teamA" && (
-                <aside className="col-span-4 bg-black/60 border border-cyan-500/30 rounded-xl p-4 text-cyan-400 h-[260px] flex flex-col items-center justify-center">
-                  <h3 className="text-center font-mono font-bold mb-2">LIVE PREVIEW</h3>
-                  {activeTab === "pieces" && (
-                    <div className="flex flex-col items-center gap-4">
-                      <PieceSVG type={previewPiece} size={80} color={draft.pieceColors[previewPiece]} glowLevel={draft.glowIntensity} />
-                      <div className="font-mono" style={{ color: draft.pieceColors[previewPiece], textShadow: `0 0 8px ${draft.pieceColors[previewPiece]}` }}>{previewPiece}</div>
-                    </div>
-                  )}
-                </aside>
+            {/* Right – Field controls + compact preview (5 cols) */}
+            <section className="col-span-5 space-y-4">
+              {/* Compact Live Preview */}
+              <div className="h-44 bg-black/60 border border-cyan-500/30 rounded-xl flex items-center justify-center overflow-hidden mb-4">
+                <div
+                  className="relative w-full h-full rounded-md overflow-hidden border"
+                  style={{
+                    borderColor: draft.fieldLineColor,
+                    background: BG_PRESETS[(draft.bgPreset as BgPreset)].css,
+                  }}
+                >
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: draft.fieldSurfaceColor }}
+                  />
+                  <div
+                    className="absolute inset-0 flex items-center justify-center gap-4"
+                    style={{
+                      color: draft.accentColor,
+                      textShadow: `0 0 8px ${draft.accentColor}`,
+                    }}
+                  >
+                    <span className="text-2xl font-mono">△</span>
+                    <span className="text-2xl font-mono">□</span>
+                    <span className="text-2xl font-mono">○</span>
+                  </div>
+                </div>
+              </div>
+              <FieldTab settings={draft} onChange={setDraft} />
+            </section>
+          </>
+        ) : (
+          <>
+            {/* Left – Other tabs (8 cols) */}
+            <section
+              className={
+                activeTab === "teamA"
+                  ? "col-span-12 space-y-6 overflow-y-auto max-h-[75vh] p-2"
+                  : "col-span-8 space-y-6 overflow-y-auto max-h-[75vh] p-2"
+              }
+            >
+              {activeTab === "teamA" && (
+                <TeamATab settings={draft} onChange={setDraft} />
               )}
-           </>
-         )}
-       </div>
+              {activeTab === "pieces" && (
+                <PiecesTab
+                  settings={draft}
+                  onChange={setDraft}
+                  selectedPieceProp={previewPiece}
+                  setSelectedPieceProp={setPreviewPiece}
+                />
+              )}
+            </section>
+
+            {activeTab !== "teamA" && (
+              <aside className="col-span-4 bg-black/60 border border-cyan-500/30 rounded-xl p-4 text-cyan-400 h-[260px] flex flex-col items-center justify-center">
+                <h3 className="text-center font-mono font-bold mb-2">
+                  LIVE PREVIEW
+                </h3>
+                {activeTab === "pieces" && (
+                  <div className="flex flex-col items-center gap-4">
+                    <PieceSVG
+                      type={previewPiece}
+                      size={80}
+                      color={draft.pieceColors[previewPiece]}
+                      glowLevel={draft.glowIntensity}
+                    />
+                    <div
+                      className="font-mono"
+                      style={{
+                        color: draft.pieceColors[previewPiece],
+                        textShadow: `0 0 8px ${draft.pieceColors[previewPiece]}`,
+                      }}
+                    >
+                      {previewPiece}
+                    </div>
+                  </div>
+                )}
+              </aside>
+            )}
+          </>
+        )}
+      </div>
     </div>
-  );
+  )
 }

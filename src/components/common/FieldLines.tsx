@@ -1,19 +1,29 @@
 export function FieldLines({
   w,
+
   h,
+
   color,
 }: {
-  w: number;
-  h: number;
-  color: string;
+  w: number
+
+  h: number
+
+  color: string
 }) {
-  if (w < 10 || h < 10) return null;
-  const lw = 1.4;
-  const gkW = w * 0.065;
-  const gkH = h * 0.24;
-  const penW = w * 0.155;
-  const penH = h * 0.435;
-  const toRad = (d: number) => (d * Math.PI) / 180;
+  if (w < 10 || h < 10) return null
+
+  const lw = 1.4
+
+  const gkW = w * 0.065
+
+  const gkH = h * 0.24
+
+  const penW = w * 0.155
+
+  const penH = h * 0.435
+
+  const toRad = (d: number) => (d * Math.PI) / 180
 
   return (
     <svg
@@ -22,8 +32,11 @@ export function FieldLines({
       viewBox={`0 0 ${w} ${h}`}
       style={{
         position: "absolute",
+
         inset: 0,
+
         pointerEvents: "none",
+
         filter: `drop-shadow(0 0 4px ${color}) drop-shadow(0 0 12px ${color}55)`,
       }}
     >
@@ -36,7 +49,14 @@ export function FieldLines({
         stroke={color}
         strokeWidth={lw}
       />
-      <line x1={w / 2} y1={2} x2={w / 2} y2={h - 2} stroke={color} strokeWidth={lw} />
+      <line
+        x1={w / 2}
+        y1={2}
+        x2={w / 2}
+        y2={h - 2}
+        stroke={color}
+        strokeWidth={lw}
+      />
       <circle
         cx={w / 2}
         cy={h / 2}
@@ -104,8 +124,11 @@ export function FieldLines({
       <circle cx={w - penW * 0.74} cy={h / 2} r={2.5} fill={color} />
       {[
         [2, 2, 0, 90],
+
         [w - 2, 2, 90, 180],
+
         [w - 2, h - 2, 180, 270],
+
         [2, h - 2, 270, 360],
       ].map(([cx, cy, a1, a2], i) => (
         <path
@@ -117,5 +140,5 @@ export function FieldLines({
         />
       ))}
     </svg>
-  );
+  )
 }

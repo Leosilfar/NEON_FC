@@ -1,30 +1,44 @@
-import type { LogoId } from "@/types";
+import type { LogoId } from "@/types"
 
 export function LogoSVG({
   id,
+
   size = 28,
+
   color = "#00f5ff",
 }: {
-  id: LogoId;
-  size?: number;
-  color?: string;
+  id: LogoId
+
+  size?: number
+
+  color?: string
 }) {
-  const c = size / 2;
-  const r = size * 0.42;
-  const glow = `drop-shadow(0 0 4px ${color})`;
+  const c = size / 2
+
+  const r = size * 0.42
+
+  const glow = `drop-shadow(0 0 4px ${color})`
+
   const props = {
     fill: "none",
+
     stroke: color,
+
     strokeWidth: 1.6,
+
     strokeLinejoin: "round" as const,
-  };
+  }
 
   switch (id) {
     case "shield": {
-      const w = size * 0.7;
-      const h = size * 0.82;
-      const x0 = c - w / 2;
-      const y0 = size * 0.1;
+      const w = size * 0.7
+
+      const h = size * 0.82
+
+      const x0 = c - w / 2
+
+      const y0 = size * 0.1
+
       return (
         <svg
           width={size}
@@ -38,14 +52,18 @@ export function LogoSVG({
             fill={`${color}22`}
           />
         </svg>
-      );
+      )
     }
+
     case "star": {
       const pts = Array.from({ length: 10 }, (_, i) => {
-        const a = (i * 36 - 90) * (Math.PI / 180);
-        const rr = i % 2 === 0 ? r : r * 0.45;
-        return `${c + rr * Math.cos(a)},${c + rr * Math.sin(a)}`;
-      }).join(" ");
+        const a = (i * 36 - 90) * (Math.PI / 180)
+
+        const rr = i % 2 === 0 ? r : r * 0.45
+
+        return `${c + rr * Math.cos(a)},${c + rr * Math.sin(a)}`
+      }).join(" ")
+
       return (
         <svg
           width={size}
@@ -55,10 +73,12 @@ export function LogoSVG({
         >
           <polygon points={pts} {...props} fill={`${color}22`} />
         </svg>
-      );
+      )
     }
+
     case "lightning": {
-      const s = size * 0.14;
+      const s = size * 0.14
+
       return (
         <svg
           width={size}
@@ -72,11 +92,14 @@ export function LogoSVG({
             fill={`${color}22`}
           />
         </svg>
-      );
+      )
     }
+
     case "crown": {
-      const bY = size * 0.7;
-      const tY = size * 0.2;
+      const bY = size * 0.7
+
+      const tY = size * 0.2
+
       return (
         <svg
           width={size}
@@ -93,13 +116,16 @@ export function LogoSVG({
           <circle cx={c} cy={bY * 0.55} r={2.5} fill={color} />
           <circle cx={size * 0.88} cy={tY * 0.9} r={2.5} fill={color} />
         </svg>
-      );
+      )
     }
+
     case "hexagon": {
       const pts = Array.from({ length: 6 }, (_, i) => {
-        const a = (i * 60 - 90) * (Math.PI / 180);
-        return `${c + r * Math.cos(a)},${c + r * Math.sin(a)}`;
-      }).join(" ");
+        const a = (i * 60 - 90) * (Math.PI / 180)
+
+        return `${c + r * Math.cos(a)},${c + r * Math.sin(a)}`
+      }).join(" ")
+
       return (
         <svg
           width={size}
@@ -109,8 +135,9 @@ export function LogoSVG({
         >
           <polygon points={pts} {...props} fill={`${color}22`} />
         </svg>
-      );
+      )
     }
+
     case "target":
       return (
         <svg
@@ -141,9 +168,11 @@ export function LogoSVG({
             opacity={0.5}
           />
         </svg>
-      );
+      )
+
     case "cross": {
-      const t = size * 0.15;
+      const t = size * 0.15
+
       return (
         <svg
           width={size}
@@ -157,8 +186,9 @@ export function LogoSVG({
             fill={`${color}22`}
           />
         </svg>
-      );
+      )
     }
+
     case "bolt2":
       return (
         <svg
@@ -173,7 +203,8 @@ export function LogoSVG({
             fill={`${color}22`}
           />
         </svg>
-      );
+      )
   }
-  return null;
+
+  return null
 }

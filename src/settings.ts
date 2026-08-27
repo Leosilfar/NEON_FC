@@ -7,7 +7,8 @@ export type {
   GameSettings,
   PaletteEntry,
   BgEntry,
-} from "./types";
+} from "./types"
+
 export {
   NEON_PALETTE,
   BG_PRESETS,
@@ -15,5 +16,6 @@ export {
   PIECE_LABEL,
   PIECE_ROLE,
   ALL_PIECE_TYPES,
-} from "./constants";
-export { loadSettings, saveSettings } from "./utils/settingsStorage";
+} from "./constants"
+
+export { loadSettings, saveSettings } from "./utils/settingsStorage"

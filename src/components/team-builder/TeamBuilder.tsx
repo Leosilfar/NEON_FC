@@ -1,68 +1,138 @@
-import { useState } from "react";
-import type { GameSettings, PieceAttrs, PieceType, Role, SlotPiece } from "@/types";
-import { SLOT_LABELS } from "@/constants";
+import { useState, useEffect, useContext } from "react"
+
+import type {
+  GameSettings,
+  PieceAttrs,
+  PieceType,
+  Role,
+  SlotPiece,
+} from "@/types"
+
+import { SLOT_LABELS, FORMATION_PRESETS } from "@/constants"
+import { GameContext } from "@/context/GameContext"
+
 import {
   changeRoleKeepingOneGK,
   countGKs,
   ensureSingleGK,
   isTeamValid,
-} from "@/utils/validators";
-import FormationSelector from "./FormationSelector";
-import TacticalField from "./TacticalField";
-import InventoryPanel from "./InventoryPanel";
+} from "@/utils/validators"
+
+import TacticalField from "./TacticalField"
+import InventoryPanel from "./InventoryPanel"
+import TeamStatsSummary from "./TeamStatsSummary"
 
 export default function TeamBuilder({
   onBack,
   onStart,
   settings,
 }: {
-  onBack: () => void;
-  onStart: (s: SlotPiece[]) => void;
-  settings: GameSettings;
+  onBack: () => void
+  onStart: (s: SlotPiece[]) => void
+  settings: GameSettings
 }) {
-  const [slots, setSlots] = useState<(SlotPiece | null)[]>([null, null, null, null, null]);
-  const [roles, setRoles] = useState<Role[]>([...SLOT_LABELS]);
-  const [selectedType, setSelectedType] = useState<PieceType | null>(null);
-  const [nid, setNid] = useState(1);
-  const filled = slots.filter(Boolean).length;
+  const [selectedFormation, setSelectedFormation] = useState<string>(
+    FORMATION_PRESETS[0].name,
+  )
+  const [roles, setRoles] = useState<Role[]>(() => {
+    const f = FORMATION_PRESETS.find(
+      (p) => p.name === FORMATION_PRESETS[0].name,
+    )
+    return f?.roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"]
+  })
+  const [slots, setSlots] = useState<(SlotPiece | null)[]>(() =>
+    Array(roles.length).fill(null),
+  )
+  const [selectedType, setSelectedType] = useState<PieceType | null>(null)
+  const [nid, setNid] = useState(1)
+  const [pendingSlot, setPendingSlot] = useState<number | null>(null)
+
+  const { updatePlayerSlots } = useContext(GameContext)
+
+  // Persist squad to global context whenever slots or roles change
+  useEffect(() => {
+    const filled = slots.map((s, i) => (s ? { ...s, role: roles[i] } : null))
+    updatePlayerSlots(filled as SlotPiece[])
+  }, [slots, roles, updatePlayerSlots])
+
+  // Update roles & slots when formation changes
+  useEffect(() => {
+    const formation = FORMATION_PRESETS.find(
+      (p) => p.name === selectedFormation,
+    )
+    let newRoles = formation?.roles
+    if (!newRoles || newRoles.length === 0) {
+      newRoles = ["GOL", "ZAG", "MEI", "ATA", "ATA"] // fallback for Customizada
+    }
+    setRoles(newRoles)
+    setSlots((prev) => {
+      const next = Array(newRoles.length).fill(null)
+      prev.forEach((s, i) => {
+        if (s && i < newRoles.length) next[i] = s
+      })
+      return next
+    })
+  }, [selectedFormation])
+
+  const filled = slots.filter(Boolean).length
+
   const avg = (k: keyof PieceAttrs) =>
     filled > 0
       ? Math.round(
-          slots.filter(Boolean).reduce((s, p) => s + (p ? settings.attrs[p.type][k] : 0), 0) /
-            filled
+          slots
+            .filter(Boolean)
+            .reduce((s, p) => s + (p ? settings.attrs[p.type][k] : 0), 0) /
+            filled,
         )
-      : 0;
+      : 0
+
   const drop = (i: number, t: PieceType) => {
     setSlots((p) => {
-      const n = [...p];
-      n[i] = { type: t, id: nid, role: roles[i] };
-      setNid((x) => x + 1);
-      return n;
-    });
-    setSelectedType(null);
-  };
+      const n = [...p]
+      n[i] = { type: t, id: nid, role: roles[i] }
+      setNid((x) => x + 1)
+      return n
+    })
+    setSelectedType(null)
+    setPendingSlot(null)
+  }
+
   const remove = (i: number) => {
     setSlots((p) => {
-      const n = [...p];
-      n[i] = null;
-      return n;
-    });
-  };
-  const canStart = isTeamValid(roles, filled);
-  const ac = settings.accentColor;
+      const n = [...p]
+      n[i] = null
+      return n
+    })
+  }
+
+  const canStart = isTeamValid(roles, filled)
+  const ac = settings.accentColor
 
   return (
-    <div style={{ width: "100%", height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        background: "rgba(5,2,15,0.9)",
+      }}
+    >
+      {/* Header – neon cyan bar like EditScreen */}
+      <header
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "16px 28px",
-          flexShrink: 0,
-          borderBottom: "1px solid rgba(155,79,255,0.15)",
-          background: "rgba(5,2,15,0.7)",
-          backdropFilter: "blur(12px)",
+          padding: "12px 24px",
+          borderRadius: "24px",
+          margin: "12px",
+          background: ac,
+          color: "#000",
+          fontWeight: 900,
+          fontFamily: "var(--font-display)",
+          boxShadow: `0 0 30px ${ac}`,
         }}
       >
         <button
@@ -71,175 +141,132 @@ export default function TeamBuilder({
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: "0.15em",
-            padding: "8px 18px",
-            borderRadius: 16,
+            padding: "6px 12px",
+            borderRadius: 9999,
             cursor: "pointer",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "rgba(200,220,255,0.4)",
+            background: "#ff007f",
+            border: "none",
+            color: "#fff",
+            boxShadow: "0 0 15px #ff007f",
             transition: "all 0.2s",
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = ac;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "rgba(200,220,255,0.4)";
-          }}
         >
-          ← MENU
+          ← VOLTAR
         </button>
-        <div style={{ textAlign: "center" }}>
+
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ fontSize: 18, letterSpacing: "0.1em" }}>MEU ELENCO</div>
           <div
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,
-              color: `${ac}55`,
               letterSpacing: "0.35em",
-              marginBottom: 2,
+              marginTop: 2,
+              opacity: 0.7,
             }}
           >
             FASE 01 · MONTAGEM
           </div>
-          <div
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 17,
-              fontWeight: 900,
-              color: ac,
-              textShadow: `0 0 14px ${ac}`,
-              letterSpacing: "0.16em",
-            }}
-          >
-            MONTE SEU TIME
-          </div>
         </div>
+
         <button
-          onClick={() => {
-            if (countGKs(roles) !== 1) {
-              window.alert("O time deve conter exatamente 1 GOL (goleiro).");
-              return;
-            }
-            const filledSlots = slots
-              .map((s, i) => (s ? { ...s, role: roles[i] } : null))
-              .filter(Boolean) as SlotPiece[];
-            onStart(filledSlots);
-          }}
+          onClick={onBack}
           disabled={!canStart}
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.16em",
-            padding: "9px 22px",
-            borderRadius: "var(--rounded-xl)",
+            padding: "8px 18px",
+            borderRadius: 9999,
             cursor: canStart ? "pointer" : "not-allowed",
-            background: canStart ? "rgba(57,255,90,0.1)" : "rgba(57,255,90,0.03)",
-            border: `1.5px solid ${canStart ? "#39ff5a" : "rgba(57,255,90,0.2)"}`,
-            color: canStart ? "#39ff5a" : "rgba(57,255,90,0.24)",
-            textShadow: canStart ? "0 0 10px #39ff5a" : "none",
-            boxShadow: canStart ? "0 0 20px rgba(57,255,90,0.28)" : "none",
+            background: canStart ? "#ff007f" : "rgba(255,0,127,0.2)",
+            border: "none",
+            color: canStart ? "#fff" : "rgba(255,0,127,0.5)",
+            boxShadow: canStart ? "0 0 20px #ff007f" : "none",
             transition: "all 0.2s",
-            animation: canStart ? "btn-pulse-green 2s ease-in-out infinite" : "none",
           }}
         >
-          JOGAR →
+          SALVAR
         </button>
-      </div>
+      </header>
 
-      <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
+      {/* Main content area */}
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          overflow: "hidden",
+          gap: "16px",
+          padding: "16px",
+        }}
+      >
+        {/* Left column – Tactical field */}
         <div
           style={{
-            flex: "0 0 62%",
+            flex: 1,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "space-between",
             height: "100%",
-            minHeight: 0,
-            overflow: "hidden",
-            padding: "18px",
-            gap: 18,
-            borderRight: "1px solid rgba(155,79,255,0.08)",
-            boxSizing: "border-box",
+            minWidth: 0,
           }}
         >
-          <div style={{ flexShrink: 0, width: "100%" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                <div
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: 999,
-                    background: `linear-gradient(90deg, rgba(255,255,255,0.02), ${ac}10)`,
-                    border: `1px solid ${ac}33`,
-                    boxShadow: `0 6px 18px ${ac}14,inset 0 0 12px ${ac}06`,
-                    fontFamily: "var(--font-display)",
-                    fontSize: 11,
-                    fontWeight: 800,
-                    color: ac,
-                    letterSpacing: "0.18em",
-                  }}
-                >
-                  FORMAÇÃO TÁTICA · {filled}/5
-                </div>
-              </div>
+          {/* Formation selector as neon pills */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+              marginBottom: "12px",
+            }}
+          >
+            {FORMATION_PRESETS.map((f) => (
               <button
-                onClick={() => {
-                  setSlots([null, null, null, null, null]);
-                  setRoles([...SLOT_LABELS]);
-                }}
+                key={f.name}
+                onClick={() => setSelectedFormation(f.name)}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  color: "rgba(255,45,155,0.5)",
-                  background: "none",
-                  border: "none",
+                  fontFamily: "var(--font-display)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  padding: "6px 12px",
+                  borderRadius: 9999,
                   cursor: "pointer",
-                  letterSpacing: "0.1em",
+                  background:
+                    selectedFormation === f.name
+                      ? `${ac}33`
+                      : "rgba(0,0,0,0.5)",
+                  border: `1px solid ${
+                    selectedFormation === f.name ? ac : `${ac}44`
+                  }`,
+                  color: selectedFormation === f.name ? ac : "#fff",
+                  textShadow:
+                    selectedFormation === f.name ? `0 0 8px ${ac}` : "none",
+                  transition: "all 0.2s",
                 }}
               >
-                LIMPAR
+                {f.name}
               </button>
-            </div>
-            <div
+            ))}
+            <button
+              onClick={() => setSelectedFormation("Customizada")}
               style={{
-                height: 3,
-                background: "rgba(255,255,255,0.05)",
-                borderRadius: 2,
-                marginBottom: 12,
-                overflow: "hidden",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                padding: "6px 12px",
+                borderRadius: 9999,
+                background: "rgba(255,45,155,0.2)",
+                border: "1px solid rgba(255,45,155,0.5)",
+                color: "#ff66cc",
+                cursor: "pointer",
               }}
             >
-              <div
-                style={{
-                  height: "100%",
-                  width: `${(filled / 5) * 100}%`,
-                  borderRadius: 2,
-                  background: `linear-gradient(90deg,${ac}88,${ac})`,
-                  boxShadow: `0 0 8px ${ac}`,
-                  transition: "width 0.4s ease",
-                }}
-              />
-            </div>
-
-            <FormationSelector
-              accentColor={ac}
-              onSelect={(next) => {
-                if (next) setRoles(ensureSingleGK(next));
-              }}
-            />
-
-            <div
-              style={{
-                height: 3,
-                background: "rgba(255,255,255,0.02)",
-                borderRadius: 2,
-                marginBottom: 18,
-                overflow: "hidden",
-              }}
-            />
+              LIMPAR
+            </button>
           </div>
 
+          {/* Tactical field fills remaining height */}
           <TacticalField
             slots={slots}
             roles={roles}
@@ -247,43 +274,60 @@ export default function TeamBuilder({
             settings={settings}
             onPlace={drop}
             onRemove={remove}
-            onChangeRole={(i, role) => setRoles((prev) => changeRoleKeepingOneGK(prev, i, role))}
+            onChangeRole={(i, role) =>
+              setRoles((prev) => changeRoleKeepingOneGK(prev, i, role))
+            }
+            onSlotClick={setPendingSlot}
           />
-
-          {!canStart && (
-            <div
-              style={{
-                height: 28,
-                borderRadius: 8,
-                marginTop: 8,
-                display: "flex",
-                alignItems: "center",
-                padding: "4px 10px",
-                flexShrink: 0,
-                background: "rgba(245,230,66,0.03)",
-                border: "1px solid rgba(245,230,66,0.12)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "rgba(245,230,66,0.7)",
-              }}
-            >
-              {filled < 5
-                ? `⚡ Arraste peças para os ${5 - filled} slot(s) vazios.`
-                : "⚡ O time precisa de exatamente 1 GOL."}
-            </div>
-          )}
         </div>
 
-          <InventoryPanel
-            settings={settings}
-            avg={avg}
-            onPick={(t) => {
-              const firstEmpty = slots.findIndex((s) => !s);
-              if (firstEmpty !== -1) drop(firstEmpty, t);
-              setSelectedType(t);
-            }}
-          />
+        {/* Right column – Inventory + Stats */}
+        <div
+          style={{
+            width: "340px",
+            flexShrink: 0,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{ flex: 1, overflowY: "auto", padding: "0 4px 12px 4px" }}
+          >
+            <InventoryPanel
+              settings={settings}
+              avg={avg}
+              onPick={(t) => {
+                const target = pendingSlot ?? slots.findIndex((s) => !s)
+                if (target !== -1) drop(target, t)
+                setSelectedType(t)
+              }}
+            />
+          </div>
+          <TeamStatsSummary accentColor={ac} avg={avg} />
+        </div>
       </div>
+
+      {/* Validation hint */}
+      {!canStart && (
+        <div
+          style={{
+            padding: "8px 12px",
+            borderRadius: 8,
+            background: "rgba(245,230,66,0.08)",
+            border: "1px solid rgba(245,230,66,0.2)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "rgba(245,230,66,0.9)",
+            margin: "0 16px 16px 16px",
+          }}
+        >
+          {filled < roles.length
+            ? `⚡ Preencha os ${roles.length - filled} slot(s) vazios.`
+            : "⚡ O time precisa de exatamente 1 GOL."}
+        </div>
+      )}
     </div>
-  );
+  )
 }
