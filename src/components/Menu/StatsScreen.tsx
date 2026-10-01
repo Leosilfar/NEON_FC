@@ -12,7 +12,7 @@ export default function StatsScreen({ onBack }: { onBack: () => void }) {
         position: "fixed",
         top: 0,
         left: 0,
-        backgroundImage: "url('/assets/background.png')",
+        backgroundImage: "url('/background.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         display: "flex",

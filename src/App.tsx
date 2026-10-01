@@ -35,7 +35,8 @@ const FpsCounter = () => {
 }
 
 export default function App() {
-  const { screen, setScreen, settings, playerSlots } = useContext(GameContext)!
+  const { screen, setScreen, settings, playerSlots, matchMode } =
+    useContext(GameContext)!
   const [showFps, setShowFps] = useState(false)
 
   let menuContent = null
@@ -100,6 +101,7 @@ export default function App() {
       {screen === "PLAY" && (
         <Match
           playerSlots={playerSlots}
+          matchMode={matchMode}
           settings={settings}
           onExit={() => setScreen("MAIN")}
         />

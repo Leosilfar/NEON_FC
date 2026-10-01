@@ -1,11 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Rajdhani:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700;900&display=swap');
 @import 'tailwindcss';
 
 /* vscode-hide-unknown-at-rules */
 @theme {
   --font-display: 'Rajdhani', 'Exo 2', system-ui, sans-serif;
-  --font-body: 'Outfit', system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;
+  --font-body: 'Rajdhani', 'Exo 2', system-ui, sans-serif;
+  --font-mono: 'Rajdhani', 'Exo 2', system-ui, sans-serif;
+  --font-sans: 'Rajdhani', 'Exo 2', system-ui, sans-serif;
 }
 
 :root {
@@ -20,7 +21,7 @@ html, body, #root {
   margin: 0; padding: 0;
   background: #05020f;
   color: #e0f7ff;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: var(--font-display);
 }
 
 /* ── Scrollbars ─────────────────────────────────────────── */
@@ -63,7 +64,7 @@ input[type="text"].neon-input {
   border: none;
   border-bottom: 1.5px solid rgba(0,245,255,0.3);
   color: #e0f7ff;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
   font-size: 13px;
   letter-spacing: 0.12em;
   padding: 4px 2px;

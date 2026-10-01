@@ -2,6 +2,9 @@ import { useContext, useState } from "react"
 import { GameContext } from "@/context/GameContext"
 import type { GameSettings } from "@/types"
 
+type LanguageKey = keyof typeof translations
+type Difficulty = NonNullable<GameSettings["difficulty"]>
+
 const translations = {
   PT: {
     settings: "SETTINGS",
@@ -52,7 +55,7 @@ export default function SettingsScreen({
 }) {
   const { settings, updateSettings } = useContext(GameContext)!
   const [draft, setDraft] = useState<GameSettings>(() => ({ ...settings }))
-  const languageKey = settings.language?.startsWith("pt") ? "PT" : "EN"
+  const languageKey: LanguageKey = draft.language?.startsWith("pt") ? "PT" : "EN"
   const t = translations[languageKey]
 
   const handleSave = () => {
@@ -227,23 +230,23 @@ export default function SettingsScreen({
               {t.idioma}
             </h2>
             <div className="space-y-3">
-              {["PT", "EN"].map((langKey) => (
+              {(["PT", "EN"] as const).map((langKey) => (
                 <label
                   key={langKey}
                   className="flex items-center gap-4 cursor-pointer group"
                 >
                   <div
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                      (settings.language?.startsWith("pt") &&
+                      (draft.language?.startsWith("pt") &&
                         langKey === "PT") ||
-                      (settings.language?.startsWith("en") && langKey === "EN")
+                      (draft.language?.startsWith("en") && langKey === "EN")
                         ? "border-[#ff007f] shadow-[0_0_10px_#ff007f]"
                         : "border-purple-900 bg-black/60"
                     }`}
                   >
-                    {(settings.language?.startsWith("pt") &&
+                    {(draft.language?.startsWith("pt") &&
                       langKey === "PT") ||
-                    (settings.language?.startsWith("en") &&
+                    (draft.language?.startsWith("en") &&
                       langKey === "EN") ? (
                       <span className="text-[#ff007f] font-bold text-xs">
                         ✓
@@ -253,7 +256,7 @@ export default function SettingsScreen({
                   <input
                     type="radio"
                     name="language"
-                    checked={settings.language?.startsWith(
+                    checked={draft.language?.startsWith(
                       langKey.toLowerCase(),
                     )}
                     onChange={() =>
@@ -304,19 +307,19 @@ export default function SettingsScreen({
               {t.dificuldade}
             </h2>
             <div className="space-y-3">
-              {["FACIL", "MEDIO", "DIFICIL"].map((diff) => (
+              {(["easy", "medium", "hard"] as const).map((diff) => (
                 <label
                   key={diff}
                   className="flex items-center gap-4 cursor-pointer group"
                 >
                   <div
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                      draft.difficulty?.toUpperCase() === diff
+                      draft.difficulty === diff
                         ? "border-[#ff007f] shadow-[0_0_10px_#ff007f]"
                         : "border-purple-900 bg-black/60"
                     }`}
                   >
-                    {draft.difficulty?.toUpperCase() === diff && (
+                    {draft.difficulty === diff && (
                       <span className="text-[#ff007f] font-bold text-xs">
                         ✓
                       </span>
@@ -325,19 +328,19 @@ export default function SettingsScreen({
                   <input
                     type="radio"
                     name="difficulty"
-                    checked={draft.difficulty?.toUpperCase() === diff}
+                    checked={draft.difficulty === diff}
                     onChange={() =>
                       setDraft((p) => ({
                         ...p,
-                        difficulty: diff.toLowerCase() as any,
+                        difficulty: diff satisfies Difficulty,
                       }))
                     }
                     className="hidden"
                   />
                   <span className="text-sm group-hover:text-cyan-300 transition-colors">
-                    {diff === "FACIL"
+                    {diff === "easy"
                       ? t.facil
-                      : diff === "MEDIO"
+                      : diff === "medium"
                         ? t.medio
                         : t.dificil}
                   </span>

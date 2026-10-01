@@ -17,9 +17,9 @@ export function cShape(
 
   switch (type) {
     case "triangle":
-      ctx.moveTo(cx, cy - r * 0.95)
+      ctx.moveTo(cx + r * 0.95, cy)
 
-      ctx.lineTo(cx + r * 0.95, cy + r * 0.95)
+      ctx.lineTo(cx - r * 0.95, cy - r * 0.95)
 
       ctx.lineTo(cx - r * 0.95, cy + r * 0.95)
 
@@ -41,13 +41,13 @@ export function cShape(
       break
 
     case "diamond":
-      ctx.moveTo(cx, cy - r * 0.95)
+      ctx.moveTo(cx + r * 0.95, cy)
 
-      ctx.lineTo(cx + r * 0.95, cy)
-
-      ctx.lineTo(cx, cy + r * 0.95)
+      ctx.lineTo(cx, cy - r * 0.95)
 
       ctx.lineTo(cx - r * 0.95, cy)
+
+      ctx.lineTo(cx, cy + r * 0.95)
 
       ctx.closePath()
 
@@ -55,7 +55,7 @@ export function cShape(
 
     case "pentagon":
       for (let i = 0; i < 5; i++) {
-        const a = (i * 72 - 90) * (Math.PI / 180)
+        const a = (i * 72) * (Math.PI / 180)
 
         if (i === 0)
           ctx.moveTo(cx + r * 0.95 * Math.cos(a), cy + r * 0.95 * Math.sin(a))
@@ -69,13 +69,13 @@ export function cShape(
 
     case "line":
       ctx.roundRect(
-        cx - r * 1.4,
+        cx - r * 0.34,
 
-        cy - r * 0.34,
-
-        r * 2.8,
+        cy - r * 1.4,
 
         r * 0.68,
+
+        r * 2.8,
 
         r * 0.28,
       )
@@ -109,55 +109,41 @@ export function cPiece(
 ) {
   const gz = glowLevel === "low" ? 5 : glowLevel === "high" ? 18 : 10
 
+  // Base shapes point right (0 rad). Party "A" (HOME) keeps 0, "B" (AWAY) uses π.
+  const baseAngle = p.rot !== undefined ? p.rot : (p.team === "A" ? 0 : Math.PI)
+
   ctx.save()
+  ctx.translate(cx, cy)
+  ctx.rotate(baseAngle)
 
   ctx.shadowColor = color
-
   ctx.shadowBlur = selected ? gz * 1.8 : gz
-
   ctx.fillStyle = color + "22"
-
   ctx.strokeStyle = color
-
   ctx.lineWidth = selected ? 2.5 : 1.8
 
-  cShape(ctx, p.type, cx, cy, r)
+  cShape(ctx, p.type, 0, 0, r)
 
   ctx.fill()
-
   ctx.stroke()
 
   const dot = p.team === "A" ? teamAColor : teamBColor
-
   ctx.shadowColor = dot
-
   ctx.shadowBlur = 7
-
   ctx.fillStyle = dot
-
   ctx.beginPath()
-
-  ctx.arc(cx, cy, r * 0.2, 0, Math.PI * 2)
-
+  ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2)
   ctx.fill()
 
   if (selected) {
     ctx.setLineDash([4, 3])
-
     ctx.lineDashOffset = -((ts * 0.045) % 7)
-
     ctx.globalAlpha = 0.7
-
     ctx.shadowBlur = gz * 1.5
-
     ctx.beginPath()
-
-    ctx.arc(cx, cy, r + r * 0.25, 0, Math.PI * 2)
-
+    ctx.arc(0, 0, r + r * 0.25, 0, Math.PI * 2)
     ctx.stroke()
-
     ctx.setLineDash([])
-
     ctx.globalAlpha = 1
   }
 

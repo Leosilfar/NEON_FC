@@ -2,6 +2,8 @@ export type PieceType = "triangle" | "square" | "circle" | "diamond" | "pentagon
 
 export type Team = "A" | "B"
 
+export type MatchMode = "normal" | "training"
+
 export type Screen = "SPLASH" | "MAIN" | "SETTINGS" | "EDITAR" | "ELENCO" | "STATS" | "PLAY"
 
 export type Role = "GOL" | "ZAG" | "LAT" | "VOL" | "MEI" | "ATA"
@@ -11,11 +13,23 @@ export interface GPiece {
 
   type: PieceType
 
+  role?: Role
+
   team: Team
 
   x: number
 
   y: number
+
+  vx: number
+
+  vy: number
+
+  rot?: number
+
+  isPlayerControlled: boolean
+
+  isPrimaryChaser?: boolean
 }
 
 export interface Ball {
@@ -95,7 +109,13 @@ export interface GS {
 
   scoreB: number
 
+  matchMode: MatchMode
+
+  opponentSlots: SlotPiece[]
+
   paused: boolean
+
+  finished: boolean
 
   timeLeft: number
 
@@ -127,11 +147,15 @@ export interface HudSnap {
 
   scoreB: number
 
+  matchMode: MatchMode
+
   timeLeft: number
 
   notification: string | null
 
   paused: boolean
+
+  finished: boolean
 
   selectedId: number | null
 

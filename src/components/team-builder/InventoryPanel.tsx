@@ -2,10 +2,9 @@ import {
   ALL_PIECE_TYPES,
   PIECE_LABEL,
   PIECE_ROLE,
-  TEAM_B_PRESET,
 } from "@/constants"
 
-import type { GameSettings, PieceType } from "@/types"
+import type { GPiece, GameSettings, PieceType } from "@/types"
 
 import { LogoSVG, PieceSVG } from "@/components/common"
 
@@ -18,11 +17,15 @@ export default function InventoryPanel({
 
   avg,
 
+  opponentPieces,
+
   onPick,
 }: {
   settings: GameSettings
 
   avg: (k: keyof PieceAttrs) => number
+
+  opponentPieces: GPiece[]
 
   onPick: (type: PieceType) => void
 }) {
@@ -299,7 +302,7 @@ export default function InventoryPanel({
               color={settings.teamB.color}
             />
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              {TEAM_B_PRESET.map((p) => (
+              {opponentPieces.map((p) => (
                 <div
                   key={p.id}
                   style={{

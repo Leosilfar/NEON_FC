@@ -26,7 +26,7 @@ export default function TeamATab({
   }, [activeTeam, settings.teamA, settings.teamB])
 
   // Local logo options
-  const LOGO_OPTIONS: { label: string value: LogoId }[] = [
+  const LOGO_OPTIONS: { label: string; value: LogoId }[] = [
     { label: "Escudo", value: "shield" },
     { label: "Estrela", value: "star" },
     { label: "Relâmpago", value: "lightning" },
@@ -38,7 +38,7 @@ export default function TeamATab({
   ]
 
   const handleTeamUpdate = (
-    partial: Partial<{ name: string color: string logo: LogoId }>,
+    partial: Partial<{ name: string; color: string; logo: LogoId }>,
   ) => {
     const updated = {
       ...(activeTeam === "A" ? settings.teamA : settings.teamB),

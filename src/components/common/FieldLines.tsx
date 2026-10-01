@@ -1,3 +1,5 @@
+import { CORNER_RADIUS, VW } from "@/constants/physics"
+
 export function FieldLines({
   w,
 
@@ -23,7 +25,7 @@ export function FieldLines({
 
   const penH = h * 0.435
 
-  const toRad = (d: number) => (d * Math.PI) / 180
+  const cr = (CORNER_RADIUS / VW) * w
 
   return (
     <svg
@@ -45,6 +47,8 @@ export function FieldLines({
         y={2}
         width={w - 4}
         height={h - 4}
+        rx={cr}
+        ry={cr}
         fill={`${color}08`}
         stroke={color}
         strokeWidth={lw}
@@ -122,23 +126,6 @@ export function FieldLines({
       />
       <circle cx={penW * 0.74} cy={h / 2} r={2.5} fill={color} />
       <circle cx={w - penW * 0.74} cy={h / 2} r={2.5} fill={color} />
-      {[
-        [2, 2, 0, 90],
-
-        [w - 2, 2, 90, 180],
-
-        [w - 2, h - 2, 180, 270],
-
-        [2, h - 2, 270, 360],
-      ].map(([cx, cy, a1, a2], i) => (
-        <path
-          key={i}
-          d={`M ${cx + 14 * Math.cos(toRad(a1 as number))} ${cy + 14 * Math.sin(toRad(a1 as number))} A 14 14 0 0 1 ${cx + 14 * Math.cos(toRad(a2 as number))} ${cy + 14 * Math.sin(toRad(a2 as number))}`}
-          fill="none"
-          stroke={color}
-          strokeWidth={lw}
-        />
-      ))}
     </svg>
   )
 }

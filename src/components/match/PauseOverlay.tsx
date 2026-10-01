@@ -23,7 +23,21 @@ export default function PauseOverlay({
 
   onExit: () => void
 }) {
-  const ac = settings.accentColor
+  const menuMagenta = "#ff007f"
+  const menuCyan = "#00f0ff"
+  const menuDark = "#05020f"
+  const title = hud.finished ? "FIM DE JOGO" : "PAUSE"
+  const eyebrow = hud.finished ? "PARTIDA ENCERRADA" : "SISTEMA PAUSADO"
+  const actions = hud.finished
+    ? [
+        { label: "↺  REINICIAR", col: menuCyan, action: onRestart },
+        { label: "✕  SAIR DA PARTIDA", col: menuMagenta, action: onExit },
+      ]
+    : [
+        { label: "▶  CONTINUAR", col: menuMagenta, action: onContinue },
+        { label: "↺  REINICIAR", col: menuCyan, action: onRestart },
+        { label: "✕  SAIR DA PARTIDA", col: menuMagenta, action: onExit },
+      ]
 
   return (
     <div
@@ -34,7 +48,7 @@ export default function PauseOverlay({
 
         zIndex: 100,
 
-        background: "rgba(4,1,13,0.9)",
+        background: "rgba(5,2,15,0.92)",
 
         backdropFilter: "blur(10px)",
 
@@ -69,11 +83,11 @@ export default function PauseOverlay({
 
           borderRadius: 16,
 
-          background: "rgba(5,2,20,0.95)",
+          background: "rgba(5,2,15,0.96)",
 
-          border: `1px solid ${ac}33`,
+          border: `1px solid ${menuMagenta}88`,
 
-          boxShadow: `0 0 60px ${ac}18,inset 0 0 40px ${ac}06`,
+          boxShadow: `0 0 60px ${menuMagenta}40,inset 0 0 40px ${menuCyan}10`,
 
           minWidth: 300,
 
@@ -86,14 +100,14 @@ export default function PauseOverlay({
 
             fontSize: 10,
 
-            color: `${ac}66`,
+            color: `${menuCyan}aa`,
 
             letterSpacing: "0.35em",
 
             marginBottom: 8,
           }}
         >
-          SISTEMA PAUSADO
+          {eyebrow}
         </div>
         <div
           style={{
@@ -103,16 +117,16 @@ export default function PauseOverlay({
 
             fontWeight: 900,
 
-            color: ac,
+            color: "#fff",
 
-            textShadow: `0 0 16px ${ac},0 0 40px ${ac}66`,
+            textShadow: `0 0 16px ${menuMagenta},0 0 40px ${menuMagenta}99`,
 
             letterSpacing: "0.14em",
 
             marginBottom: 8,
           }}
         >
-          PAUSE
+          {title}
         </div>
         <div
           style={{
@@ -128,9 +142,9 @@ export default function PauseOverlay({
 
             borderRadius: "var(--rounded-lg)",
 
-            background: `${ac}08`,
+            background: `${menuCyan}08`,
 
-            border: `1px solid ${ac}18`,
+            border: `1px solid ${menuCyan}26`,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -195,13 +209,7 @@ export default function PauseOverlay({
             width: "100%",
           }}
         >
-          {[
-            { label: "▶  CONTINUAR", col: ac, action: onContinue },
-
-            { label: "↺  REINICIAR", col: "#f5e642", action: onRestart },
-
-            { label: "✕  SAIR DA PARTIDA", col: "#ff2d9b", action: onExit },
-          ].map(({ label, col, action }) => (
+          {actions.map(({ label, col, action }) => (
             <button
               key={label}
               onClick={action}
@@ -224,29 +232,32 @@ export default function PauseOverlay({
 
                 transition: "all 0.2s",
 
-                background: `${col}0e`,
+                background: col === menuCyan ? menuCyan : `${menuDark}cc`,
 
-                border: `1px solid ${col}44`,
+                border: `1px solid ${col}`,
 
-                color: col,
+                color: col === menuCyan ? menuDark : col,
 
                 textShadow: `0 0 8px ${col}`,
+
+                boxShadow: `0 0 18px ${col}38`,
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget
 
-                el.style.background = `${col}1e`
+                el.style.background =
+                  col === menuCyan ? "#4fffff" : `${col}22`
 
-                el.style.boxShadow = `0 0 18px ${col}44`
+                el.style.boxShadow = `0 0 28px ${col}88`
 
                 el.style.borderColor = col
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget
 
-                el.style.background = `${col}0e`
+                el.style.background = col === menuCyan ? menuCyan : `${menuDark}cc`
 
-                el.style.boxShadow = "none"
+                el.style.boxShadow = `0 0 18px ${col}38`
 
                 el.style.borderColor = `${col}44`
               }}
@@ -263,12 +274,12 @@ export default function PauseOverlay({
 
             fontSize: 9,
 
-            color: `${ac}44`,
+            color: `${menuCyan}66`,
 
             letterSpacing: "0.15em",
           }}
         >
-          ESC / P para retomar
+          {hud.finished ? "00:00" : "ESC / P para retomar"}
         </div>
       </div>
     </div>

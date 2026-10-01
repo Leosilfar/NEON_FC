@@ -1,6 +1,6 @@
 import { useRef } from "react"
 
-import type { GameSettings, SlotPiece } from "@/types"
+import type { GameSettings, MatchMode, SlotPiece } from "@/types"
 
 import { BG_PRESETS } from "@/constants"
 
@@ -16,12 +16,15 @@ import PauseOverlay from "./PauseOverlay"
 
 export default function Match({
   playerSlots,
+  matchMode,
 
   onExit,
 
   settings,
 }: {
   playerSlots: SlotPiece[]
+
+  matchMode: MatchMode
 
   onExit: () => void
 
@@ -35,6 +38,8 @@ export default function Match({
 
   const { hud, pauseToggle, restartGame, selectPieceAt } = useMatch(
     playerSlots,
+
+    matchMode,
 
     settings,
 
@@ -74,7 +79,7 @@ export default function Match({
         onFieldClick={selectPieceAt}
       />
       <MatchHud settings={settings} hud={hud} onPause={pauseToggle} />
-      {hud.paused && (
+      {(hud.paused || hud.finished) && (
         <PauseOverlay
           settings={settings}
           hud={hud}

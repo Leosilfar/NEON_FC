@@ -2,6 +2,14 @@ import type { GameSettings, HudSnap } from "@/types"
 
 import { LogoSVG } from "@/components/common"
 
+function formatTime(timeLeft: number) {
+  if (!Number.isFinite(timeLeft)) return "TREINO"
+  const clamped = Math.max(0, Math.floor(timeLeft))
+  const mm = String(Math.floor(clamped / 60)).padStart(2, "0")
+  const ss = String(clamped % 60).padStart(2, "0")
+  return `${mm}:${ss}`
+}
+
 export default function MatchHud({
   settings,
 
@@ -17,9 +25,7 @@ export default function MatchHud({
 }) {
   const ac = settings.accentColor
 
-  const mm = String(Math.floor(hud.timeLeft / 60)).padStart(2, "0")
-
-  const ss2 = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0")
+  const clock = formatTime(hud.timeLeft)
 
   return (
     <div
@@ -147,7 +153,7 @@ export default function MatchHud({
               letterSpacing: "0.1em",
             }}
           >
-            {mm}:{ss2}
+            {clock}
           </div>
         </div>
         <div

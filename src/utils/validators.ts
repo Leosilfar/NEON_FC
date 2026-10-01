@@ -4,31 +4,6 @@ export function countGKs(roles: Role[]): number {
   return roles.filter((r) => r === "GOL").length
 }
 
-export function ensureSingleGK(roles: Role[]): Role[] {
-  const n = [...roles]
-
-  const gkCount = n.filter((r) => r === "GOL").length
-
-  if (gkCount === 1) return n
-
-  if (gkCount === 0) {
-    if (n.length > 0) n[0] = "GOL"
-
-    return n
-  }
-
-  let seen = false
-
-  for (let i = 0; i < n.length; i++) {
-    if (n[i] === "GOL") {
-      if (!seen) seen = true
-      else n[i] = "ZAG"
-    }
-  }
-
-  return n
-}
-
 export function assignUniqueGK(roles: Role[], slotIndex: number): Role[] {
   const n = [...roles]
 

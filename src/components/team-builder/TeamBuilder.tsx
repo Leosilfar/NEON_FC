@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react"
+import { useState, useEffect, useContext, useMemo } from "react"
 
 import type {
   GameSettings,
@@ -8,13 +8,12 @@ import type {
   SlotPiece,
 } from "@/types"
 
-import { SLOT_LABELS, FORMATION_PRESETS } from "@/constants"
+import { FORMATION_PRESETS } from "@/constants"
 import { GameContext } from "@/context/GameContext"
+import { makeGS } from "@/engine/state"
 
 import {
   changeRoleKeepingOneGK,
-  countGKs,
-  ensureSingleGK,
   isTeamValid,
 } from "@/utils/validators"
 
@@ -47,13 +46,27 @@ export default function TeamBuilder({
   const [nid, setNid] = useState(1)
   const [pendingSlot, setPendingSlot] = useState<number | null>(null)
 
-  const { updatePlayerSlots } = useContext(GameContext)
+  const { updatePlayerSlots } = useContext(GameContext)!
 
-  // Persist squad to global context whenever slots or roles change
+  const currentSlots = useMemo<SlotPiece[]>(
+    () =>
+      roles.map((role, i) => {
+        const slot = slots[i]
+        return slot
+          ? { ...slot, role }
+          : { id: i + 1, type: "circle", role }
+      }),
+    [roles, slots],
+  )
+
+  const opponentPreviewPieces = useMemo(
+    () => makeGS(currentSlots).pieces.filter((p) => p.team === "B"),
+    [currentSlots],
+  )
+
   useEffect(() => {
-    const filled = slots.map((s, i) => (s ? { ...s, role: roles[i] } : null))
-    updatePlayerSlots(filled as SlotPiece[])
-  }, [slots, roles, updatePlayerSlots])
+    updatePlayerSlots(currentSlots)
+  }, [currentSlots, updatePlayerSlots])
 
   // Update roles & slots when formation changes
   useEffect(() => {
@@ -170,7 +183,10 @@ export default function TeamBuilder({
         </div>
 
         <button
-          onClick={onBack}
+          onClick={() => {
+            updatePlayerSlots(currentSlots)
+            onStart(currentSlots)
+          }}
           disabled={!canStart}
           style={{
             fontFamily: "var(--font-display)",
@@ -298,6 +314,7 @@ export default function TeamBuilder({
             <InventoryPanel
               settings={settings}
               avg={avg}
+              opponentPieces={opponentPreviewPieces}
               onPick={(t) => {
                 const target = pendingSlot ?? slots.findIndex((s) => !s)
                 if (target !== -1) drop(target, t)

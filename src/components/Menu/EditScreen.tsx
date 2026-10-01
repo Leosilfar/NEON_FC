@@ -47,7 +47,7 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
   return (
     <div
       className="fixed inset-0 bg-cover bg-center flex flex-col animate-neon-on"
-      style={{ backgroundImage: "url('/assets/background.png')" }}
+      style={{ backgroundImage: "url('/background.png')" }}
     >
       {/* Header */}
       <header className="flex items-center justify-between bg-[#00f0ff] text-black font-extrabold px-8 py-4 rounded-3xl mx-4 mt-4">
@@ -76,8 +76,8 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
             onClick={() => setActiveTab(tab.key)}
             className={
               activeTab === tab.key
-                ? "bg-[#ff007f] text-white shadow-[0_0_15px_#ff007f] rounded-xl px-4 py-2 font-mono font-bold transition-all duration-200"
-                : "bg-black/60 text-cyan-400 border border-cyan-500/30 hover:border-cyan-400 rounded-xl px-4 py-2 font-mono transition-all duration-200"
+                ? "bg-[#ff007f] text-white shadow-[0_0_15px_#ff007f] rounded-xl px-5 py-2 font-bold tracking-widest transition-all duration-200"
+                : "bg-black/80 text-cyan-300 border border-cyan-500/40 hover:border-cyan-400 rounded-xl px-5 py-2 font-semibold tracking-widest transition-all duration-200"
             }
           >
             {tab.label}
@@ -90,12 +90,12 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
         {activeTab === "appearance" ? (
           <>
             {/* Left – Appearance controls (7 cols) */}
-            <section className="col-span-7 space-y-6 overflow-y-auto max-h-[75vh] p-2">
+            <section className="col-span-7 space-y-6 overflow-y-auto max-h-[75vh] rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm">
               <AppearanceTab settings={draft} onChange={setDraft} />
             </section>
 
             {/* Right – Field controls + compact preview (5 cols) */}
-            <section className="col-span-5 space-y-4">
+            <section className="col-span-5 space-y-4 rounded-2xl border border-cyan-400/20 bg-black/65 p-5 shadow-[0_0_24px_rgba(0,240,255,0.12)] backdrop-blur-sm">
               {/* Compact Live Preview */}
               <div className="h-44 bg-black/60 border border-cyan-500/30 rounded-xl flex items-center justify-center overflow-hidden mb-4">
                 <div
@@ -131,8 +131,8 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
             <section
               className={
                 activeTab === "teamA"
-                  ? "col-span-12 space-y-6 overflow-y-auto max-h-[75vh] p-2"
-                  : "col-span-8 space-y-6 overflow-y-auto max-h-[75vh] p-2"
+                  ? "col-span-12 space-y-6 overflow-y-auto max-h-[75vh] rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm"
+                  : "col-span-8 space-y-6 overflow-y-auto max-h-[75vh] rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm"
               }
             >
               {activeTab === "teamA" && (
@@ -149,8 +149,8 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
             </section>
 
             {activeTab !== "teamA" && (
-              <aside className="col-span-4 bg-black/60 border border-cyan-500/30 rounded-xl p-4 text-cyan-400 h-[260px] flex flex-col items-center justify-center">
-                <h3 className="text-center font-mono font-bold mb-2">
+              <aside className="col-span-4 bg-black/75 border border-cyan-400/30 rounded-2xl p-5 text-cyan-300 h-[260px] flex flex-col items-center justify-center shadow-[0_0_24px_rgba(0,240,255,0.12)] backdrop-blur-sm">
+                <h3 className="text-center font-bold tracking-widest mb-2">
                   LIVE PREVIEW
                 </h3>
                 {activeTab === "pieces" && (
@@ -162,7 +162,7 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
                       glowLevel={draft.glowIntensity}
                     />
                     <div
-                      className="font-mono"
+                      className="font-semibold tracking-wide"
                       style={{
                         color: draft.pieceColors[previewPiece],
                         textShadow: `0 0 8px ${draft.pieceColors[previewPiece]}`,

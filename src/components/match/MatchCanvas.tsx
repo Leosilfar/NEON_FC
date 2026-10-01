@@ -4,6 +4,8 @@ import { FieldLines } from "@/components/common"
 
 import type { PlayRect } from "@/types"
 
+import { CORNER_RADIUS, VW } from "@/constants/physics"
+
 export default function MatchCanvas({
   fieldRef,
 
@@ -89,6 +91,8 @@ export default function MatchCanvas({
             height: playRect.h,
 
             background: fieldSurfaceColor,
+
+            borderRadius: (CORNER_RADIUS / VW) * playRect.w,
 
             pointerEvents: "none",
 

@@ -34,6 +34,10 @@ export default function TacticalField({
   const nodes = computeTacticalUiPositions(roles)
 
   const gkCount = countGKs(roles)
+  const previewGlow =
+    typeof settings.glowIntensity === "number"
+      ? Math.max(settings.glowIntensity, 1.5)
+      : settings.glowIntensity
 
   const backgroundStyle = {
     background: "linear-gradient(180deg,rgba(5,8,20,0.94),rgba(5,2,18,0.98))",
@@ -54,8 +58,7 @@ export default function TacticalField({
         style={{
           position: "relative",
           width: "100%",
-          minWidth: "480px",
-          maxWidth: "600px",
+          maxWidth: "560px",
           height: "100%",
           maxHeight: "100%",
           minHeight: "400px",
@@ -102,8 +105,8 @@ export default function TacticalField({
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
                 transform: "translate(-50%,-50%)",
-                width: 80,
-                height: 64,
+                width: "clamp(62px, 14%, 82px)",
+                height: "clamp(56px, 11%, 68px)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -214,10 +217,7 @@ export default function TacticalField({
                           type={piece.type}
                           size={22}
                           color={settings.pieceColors[piece.type]}
-                          glowLevel={Math.max(
-                            settings.glowIntensity as any,
-                            1.5,
-                          )}
+                          glowLevel={previewGlow}
                         />
                       </motion.div>
                     ) : (

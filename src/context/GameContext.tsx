@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { loadSettings, saveSettings } from "@/utils/settingsStorage"
 import type { GameSettings } from "@/types/settings"
-import type { SlotPiece } from "@/types/game"
+import type { MatchMode, Screen, SlotPiece } from "@/types/game"
 import { FORMATION_PRESETS } from "@/constants/formations"
 
 interface GameContextType {
-  screen: "SPLASH" | "MAIN" | "SETTINGS" | "EDITAR" | "ELENCO" | "STATS" | "PLAY"
+  screen: Screen
   setScreen: (screen: GameContextType["screen"]) => void
   settings: GameSettings
   updateSettings: (partial: Partial<GameSettings>) => void
+  matchMode: MatchMode
+  setMatchMode: (mode: MatchMode) => void
   playerSlots: SlotPiece[]
   updatePlayerSlots: (slots: SlotPiece[]) => void
 }
@@ -18,20 +20,12 @@ const GameContext = createContext<GameContextType | undefined>(undefined)
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [screen, setScreen] =
-    useState<"SPLASH" | "MAIN" | "SETTINGS" | "EDITAR" | "ELENCO" | "STATS" | "PLAY">(
-      "SPLASH",
-    )
-  const [settings, setSettings] = useState<GameSettings>({} as GameSettings)
+  const [screen, setScreen] = useState<Screen>("SPLASH")
+  const [settings, setSettings] = useState<GameSettings>(() => loadSettings())
+  const [matchMode, setMatchMode] = useState<MatchMode>("normal")
   const [playerSlots, setPlayerSlots] = useState<SlotPiece[]>([])
 
-  // Load settings from localStorage on initial render
   useEffect(() => {
-    const loaded = loadSettings()
-    if (loaded) {
-      setSettings(loaded)
-    }
-    // Initialize playerSlots from first formation preset if empty
     const defaultFormation = FORMATION_PRESETS[0]
     if (defaultFormation && defaultFormation.roles) {
       const slots: SlotPiece[] = defaultFormation.roles.map((role, idx) => ({
@@ -62,6 +56,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         setScreen,
         settings,
         updateSettings,
+        matchMode,
+        setMatchMode,
         playerSlots,
         updatePlayerSlots,
       }}
