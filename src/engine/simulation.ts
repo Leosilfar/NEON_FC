@@ -8,6 +8,7 @@ import {
   GOAL_Y1,
   MOVE_SPD,
   PIECE_MASS_BASE,
+  PR,
   SUBSTEPS,
   VH,
   VW,
@@ -24,12 +25,16 @@ import {
   shapeBallHit,
 } from "@/engine/physics"
 
-import { applyTacticalAi } from "@/engine/ai"
+import { applyTacticalAi, getTacticalAiSpinDirections } from "@/engine/ai"
 import { makeGS } from "@/engine/state"
 
 export interface MatchInputState {
   keys: ReadonlySet<string>
 }
+
+const BALL_STUCK_RADIUS = 2.5 * PR
+const BALL_STUCK_DURATION = 1.5
+const BALL_RELEASE_IMPULSE = MOVE_SPD * 1.4
 
 function updateFx(gs: GS, dt: number) {
   const drag = Math.exp(-3.2 * dt)
@@ -92,12 +97,11 @@ export function resetKickoff(gs: GS, playerSlots: SlotPiece[]) {
   gs.pieceVy = 0
   gs.goalColor = null
   gs.pendingResetScorerA = null
-}
-
-function pieceCanMoveInMode(gs: GS, team: "A" | "B") {
-  void gs
-  void team
-  return true
+  gs.stuckBallX = VW / 2
+  gs.stuckBallY = VH / 2
+  gs.stuckBallDuration = 0
+  gs.pieceMotionWatch = {}
+  gs.aiDecisionStates = {}
 }
 
 function beginGoal(
@@ -117,6 +121,7 @@ function beginGoal(
   gs.goalCooldown = 2000
   gs.goalColor = color
   gs.pendingResetScorerA = scorerA
+  gs.stuckBallDuration = 0
   gs.shakeUntil = ts + 300
   gs.flashUntil = ts + 1000
   gs.shockwaves.push({ x: gs.ball.x, y: gs.ball.y, life: 760, ttl: 760, color })
@@ -185,6 +190,38 @@ function clampBallToWallWithPinchEscape(
   return true
 }
 
+function releaseStuckBall(gs: GS, dt: number) {
+  const distanceFromAnchor = Math.hypot(
+    gs.ball.x - gs.stuckBallX,
+    gs.ball.y - gs.stuckBallY,
+  )
+
+  if (distanceFromAnchor > BALL_STUCK_RADIUS) {
+    gs.stuckBallX = gs.ball.x
+    gs.stuckBallY = gs.ball.y
+    gs.stuckBallDuration = 0
+    return
+  }
+
+  gs.stuckBallDuration += dt
+  if (gs.stuckBallDuration < BALL_STUCK_DURATION) return
+
+  let dx = VW / 2 - gs.ball.x
+  let dy = VH / 2 - gs.ball.y
+  let distanceToCenter = Math.hypot(dx, dy)
+  if (distanceToCenter < 0.001) {
+    dx = 1
+    dy = 0
+    distanceToCenter = 1
+  }
+
+  gs.ball.vx += (dx / distanceToCenter) * BALL_RELEASE_IMPULSE
+  gs.ball.vy += (dy / distanceToCenter) * BALL_RELEASE_IMPULSE
+  gs.stuckBallX = gs.ball.x
+  gs.stuckBallY = gs.ball.y
+  gs.stuckBallDuration = 0
+}
+
 export function stepMatchSimulation({
   gs,
   settings,
@@ -231,9 +268,33 @@ export function stepMatchSimulation({
   const selId = sel?.id ?? -1
 
   for (let step = 0; step < SUBSTEPS; step++) {
-    applyTacticalAi(gs, settings, subDt)
+    const aiSpinDirections = new Map<number, number>()
+    if (gs.matchMode !== "training") {
+      applyTacticalAi(gs, settings, subDt)
+      for (const [pieceId, direction] of getTacticalAiSpinDirections(
+        gs,
+        settings,
+      )) {
+        aiSpinDirections.set(pieceId, direction)
+      }
+    }
+
+    const angularSpeeds = new Map<number, number>()
+    for (const piece of gs.pieces) {
+      const rotationDirection = piece.id === selId
+        ? (input.keys.has("e") ? 1 : 0) - (input.keys.has("q") ? 1 : 0)
+        : (aiSpinDirections.get(piece.id) ?? 0)
+      if (rotationDirection === 0) continue
+
+      const maxRotationSpeed =
+        Math.PI * (0.5 + settings.attrs[piece.type].speed / 40)
+      const angularSpeed = rotationDirection * maxRotationSpeed
+      piece.rot = (piece.rot ?? 0) + angularSpeed * subDt
+      angularSpeeds.set(piece.id, angularSpeed)
+    }
 
     if (sel) {
+      const speedAttr = settings.attrs[sel.type].speed
       let dx = 0
       let dy = 0
       if (input.keys.has("w") || input.keys.has("ArrowUp")) dy -= 1
@@ -243,7 +304,6 @@ export function stepMatchSimulation({
 
       const len = Math.hypot(dx, dy)
       if (len > 0) {
-        const speedAttr = settings.attrs[sel.type].speed
         const maxSpeed = MOVE_SPD * (0.5 + speedAttr / 200)
         const accel = maxSpeed * 8
         const targetVx = (dx / len) * maxSpeed
@@ -262,9 +322,17 @@ export function stepMatchSimulation({
     }
 
     for (const p of gs.pieces) {
-      if (!pieceCanMoveInMode(gs, p.team)) continue
       p.x += p.vx * subDt
       p.y += p.vy * subDt
+      if (gs.matchMode === "training" && p.id !== selId) {
+        const pieceDrag = Math.exp(-FIELD_FRICTION * subDt)
+        p.vx *= pieceDrag
+        p.vy *= pieceDrag
+        if (Math.hypot(p.vx, p.vy) < 5) {
+          p.vx = 0
+          p.vy = 0
+        }
+      }
     }
 
     const drag = Math.exp(-FIELD_FRICTION * subDt)
@@ -304,17 +372,26 @@ export function stepMatchSimulation({
         if (iter === 0) {
           const pvx = p.vx
           const pvy = p.vy
-          const relVn = (gs.ball.vx - pvx) * hit.nx + (gs.ball.vy - pvy) * hit.ny
+          const angularSpeed = angularSpeeds.get(p.id) ?? 0
+          const contactX = gs.ball.x - hit.nx * BR - p.x
+          const contactY = gs.ball.y - hit.ny * BR - p.y
+          const surfaceVx = pvx - angularSpeed * contactY
+          const surfaceVy = pvy + angularSpeed * contactX
+          const relVn =
+            (gs.ball.vx - surfaceVx) * hit.nx +
+            (gs.ball.vy - surfaceVy) * hit.ny
+          let normalImpulse = 0
 
           if (relVn < 0) {
             const rest = 0.4 + settings.attrs[p.type].rebound * 0.006
             const pieceMass =
               PIECE_MASS_BASE * (0.8 + settings.attrs[p.type].power / 500)
             const impulse = -(1 + rest) * relVn * (pieceMass / (BALL_MASS + pieceMass))
+            normalImpulse = impulse
             gs.ball.vx += impulse * hit.nx
             gs.ball.vy += impulse * hit.ny
 
-            if (p.id === selId) {
+            if (p.id === selId || gs.matchMode === "training") {
               p.vx -= impulse * hit.nx * (BALL_MASS / pieceMass) * 0.3
               p.vy -= impulse * hit.ny * (BALL_MASS / pieceMass) * 0.3
             }
@@ -322,10 +399,25 @@ export function stepMatchSimulation({
             gs.ball.vx += pvx * 0.3
             gs.ball.vy += pvy * 0.3
           }
+
+          if (
+            p.role !== "GOL" &&
+            normalImpulse > 0 &&
+            angularSpeed !== 0
+          ) {
+            const spinTransfer =
+              normalImpulse *
+              (settings.attrs[p.type].rebound / 100) *
+              0.35 *
+              Math.sign(angularSpeed)
+            gs.ball.vx += -hit.ny * spinTransfer
+            gs.ball.vy += hit.nx * spinTransfer
+          }
+
         }
 
-        gs.ball.x += hit.nx * hit.pen
-        gs.ball.y += hit.ny * hit.pen
+        gs.ball.x += hit.nx * (hit.pen + 0.02)
+        gs.ball.y += hit.ny * (hit.pen + 0.02)
         lastPieceHit = { ...hit, rebound: settings.attrs[p.type].rebound }
       }
 
@@ -340,8 +432,6 @@ export function stepMatchSimulation({
 
           const m1 = PIECE_MASS_BASE * (0.8 + settings.attrs[p1.type].power / 500)
           const m2 = PIECE_MASS_BASE * (0.8 + settings.attrs[p2.type].power / 500)
-          const p1CanMove = pieceCanMoveInMode(gs, p1.team)
-          const p2CanMove = pieceCanMoveInMode(gs, p2.team)
           const total = m1 + m2
 
           if (iter === 0) {
@@ -353,29 +443,43 @@ export function stepMatchSimulation({
 
             if (relVn < 0) {
               const impulse = -(1 + 0.3) * relVn / (1 / m1 + 1 / m2)
-              if (p1CanMove) {
-                p1.vx += (impulse / m1) * hit.nx
-                p1.vy += (impulse / m1) * hit.ny
-              }
-              if (p2CanMove) {
-                p2.vx -= (impulse / m2) * hit.nx
-                p2.vy -= (impulse / m2) * hit.ny
-              }
+              p1.vx += (impulse / m1) * hit.nx
+              p1.vy += (impulse / m1) * hit.ny
+              p2.vx -= (impulse / m2) * hit.nx
+              p2.vy -= (impulse / m2) * hit.ny
+            }
+
+            const spinningPiece = angularSpeeds.has(p1.id) && p1.role !== "GOL"
+              ? p1
+              : angularSpeeds.has(p2.id) && p2.role !== "GOL"
+                ? p2
+                : null
+            if (spinningPiece) {
+              const orientation = spinningPiece.id === p1.id ? 1 : -1
+              const spinDirection = Math.sign(
+                angularSpeeds.get(spinningPiece.id) ?? 0,
+              )
+              const power = settings.attrs[spinningPiece.type].power / 100
+              const maxRotationSpeed =
+                Math.PI * (0.5 + settings.attrs[spinningPiece.type].speed / 40)
+              const rotationRatio = Math.min(
+                1,
+                Math.abs(angularSpeeds.get(spinningPiece.id) ?? 0) /
+                  maxRotationSpeed,
+              )
+              const push = MOVE_SPD * 0.65 * power * rotationRatio * subDt
+              const target = spinningPiece.id === p1.id ? p2 : p1
+              target.vx +=
+                -hit.ny * orientation * spinDirection * push
+              target.vy +=
+                hit.nx * orientation * spinDirection * push
             }
           }
 
-          if (p1CanMove && p2CanMove) {
-            p1.x -= hit.nx * ((hit.pen / total) * m2)
-            p1.y -= hit.ny * ((hit.pen / total) * m2)
-            p2.x += hit.nx * ((hit.pen / total) * m1)
-            p2.y += hit.ny * ((hit.pen / total) * m1)
-          } else if (p1CanMove) {
-            p1.x -= hit.nx * hit.pen
-            p1.y -= hit.ny * hit.pen
-          } else if (p2CanMove) {
-            p2.x += hit.nx * hit.pen
-            p2.y += hit.ny * hit.pen
-          }
+          p1.x -= hit.nx * ((hit.pen / total) * m2)
+          p1.y -= hit.ny * ((hit.pen / total) * m2)
+          p2.x += hit.nx * ((hit.pen / total) * m1)
+          p2.y += hit.ny * ((hit.pen / total) * m1)
         }
       }
     }
@@ -410,5 +514,6 @@ export function stepMatchSimulation({
     }
   }
 
+  releaseStuckBall(gs, dt)
   return gs
 }

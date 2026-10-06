@@ -144,6 +144,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   showScanlines: true,
 
   showGrid: true,
+
+  difficulty: "medium",
 }
 
 export const FIELD_SURFACE_OPTIONS = [

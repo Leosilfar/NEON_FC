@@ -28,6 +28,8 @@ export function loadSettings(): GameSettings {
 
         teamB: { ...DEFAULT_SETTINGS.teamB, ...(parsed.teamB ?? {}) },
 
+        difficulty: parsed.difficulty ?? DEFAULT_SETTINGS.difficulty,
+
         fieldSurfaceColor:
           parsed.fieldSurfaceColor ?? DEFAULT_SETTINGS.fieldSurfaceColor,
       }

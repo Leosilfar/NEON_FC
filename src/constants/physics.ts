@@ -8,7 +8,7 @@ export const PR = 18 // piece radius
 
 export const BR = 9 // ball radius
 
-export const MOVE_SPD = 300
+export const MOVE_SPD = 240
 
 export const BALL_FRIC = 0.975
 

@@ -68,13 +68,14 @@ export function useMatchInput({
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"].includes(e.key)) {
         e.preventDefault()
       }
 
-      keysRef.current.add(e.key)
+      keysRef.current.add(key)
 
-      if (e.key === "Tab") {
+      if (key === "Tab") {
         selectClosestPlayerToBall(gsRef.current, "A")
         onStateChange()
       }
@@ -86,7 +87,10 @@ export function useMatchInput({
       }
     }
 
-    const onUp = (e: KeyboardEvent) => keysRef.current.delete(e.key)
+    const onUp = (e: KeyboardEvent) => {
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+      keysRef.current.delete(key)
+    }
 
     window.addEventListener("keydown", onDown)
     window.addEventListener("keyup", onUp)

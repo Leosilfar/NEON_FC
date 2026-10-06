@@ -140,6 +140,16 @@ export interface GS {
   goalColor: string | null
 
   pendingResetScorerA: boolean | null
+
+  stuckBallX: number
+
+  stuckBallY: number
+
+  stuckBallDuration: number
+
+  pieceMotionWatch: Record<number, PieceMotionWatch>
+
+  aiDecisionStates: Record<number, AiDecisionState>
 }
 
 export interface HudSnap {
@@ -162,4 +172,28 @@ export interface HudSnap {
   flashColor: string | null
 
   goalColor: string | null
+}
+
+export interface PieceMotionWatch {
+  anchorX: number
+
+  anchorY: number
+
+  stillTime: number
+
+  escapeX: number
+
+  escapeY: number
+
+  escapeTime: number
+}
+
+export interface AiDecisionState {
+  cooldown: number
+
+  mistakeTime: number
+
+  mistakeX: number
+
+  mistakeY: number
 }

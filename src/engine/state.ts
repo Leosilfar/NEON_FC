@@ -190,5 +190,10 @@ export function makeGS(
     flashUntil: 0,
     goalColor: null,
     pendingResetScorerA: null,
+    stuckBallX: VW / 2,
+    stuckBallY: VH / 2,
+    stuckBallDuration: 0,
+    pieceMotionWatch: {},
+    aiDecisionStates: {},
   }
 }

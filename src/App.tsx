@@ -63,7 +63,6 @@ export default function App() {
       menuContent = (
         <TeamBuilder
           onBack={() => setScreen("MAIN")}
-          onStart={() => setScreen("PLAY")}
           settings={settings}
         />
       )

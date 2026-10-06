@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useMemo } from "react"
+import { useState, useContext, useMemo } from "react"
 
 import type {
   GameSettings,
@@ -23,30 +23,33 @@ import TeamStatsSummary from "./TeamStatsSummary"
 
 export default function TeamBuilder({
   onBack,
-  onStart,
   settings,
 }: {
   onBack: () => void
-  onStart: (s: SlotPiece[]) => void
   settings: GameSettings
 }) {
-  const [selectedFormation, setSelectedFormation] = useState<string>(
-    FORMATION_PRESETS[0].name,
+  const { playerSlots, updatePlayerSlots } = useContext(GameContext)!
+  const savedRoles = playerSlots.map((slot) => slot.role ?? "MEI")
+  const savedFormation = FORMATION_PRESETS.find(
+    (formation) =>
+      formation.roles?.join(",") === savedRoles.join(","),
   )
-  const [roles, setRoles] = useState<Role[]>(() => {
-    const f = FORMATION_PRESETS.find(
-      (p) => p.name === FORMATION_PRESETS[0].name,
-    )
-    return f?.roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"]
-  })
+  const [selectedFormation, setSelectedFormation] = useState<string>(
+    savedFormation?.name ?? "Customizada",
+  )
+  const [roles, setRoles] = useState<Role[]>(() =>
+    savedRoles.length === 5
+      ? savedRoles
+      : FORMATION_PRESETS[0].roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"],
+  )
   const [slots, setSlots] = useState<(SlotPiece | null)[]>(() =>
-    Array(roles.length).fill(null),
+    playerSlots.length === 5
+      ? playerSlots.map((slot) => ({ ...slot }))
+      : Array(5).fill(null),
   )
   const [selectedType, setSelectedType] = useState<PieceType | null>(null)
   const [nid, setNid] = useState(1)
   const [pendingSlot, setPendingSlot] = useState<number | null>(null)
-
-  const { updatePlayerSlots } = useContext(GameContext)!
 
   const currentSlots = useMemo<SlotPiece[]>(
     () =>
@@ -64,19 +67,15 @@ export default function TeamBuilder({
     [currentSlots],
   )
 
-  useEffect(() => {
-    updatePlayerSlots(currentSlots)
-  }, [currentSlots, updatePlayerSlots])
+  const selectFormation = (formationName: string) => {
+    setSelectedFormation(formationName)
+    if (formationName === "Customizada") return
 
-  // Update roles & slots when formation changes
-  useEffect(() => {
     const formation = FORMATION_PRESETS.find(
-      (p) => p.name === selectedFormation,
+      (p) => p.name === formationName,
     )
-    let newRoles = formation?.roles
-    if (!newRoles || newRoles.length === 0) {
-      newRoles = ["GOL", "ZAG", "MEI", "ATA", "ATA"] // fallback for Customizada
-    }
+    const newRoles =
+      formation?.roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"]
     setRoles(newRoles)
     setSlots((prev) => {
       const next = Array(newRoles.length).fill(null)
@@ -85,7 +84,14 @@ export default function TeamBuilder({
       })
       return next
     })
-  }, [selectedFormation])
+  }
+
+  const clearTeam = () => {
+    setSelectedFormation("Customizada")
+    setSlots(Array(roles.length).fill(null))
+    setSelectedType(null)
+    setPendingSlot(null)
+  }
 
   const filled = slots.filter(Boolean).length
 
@@ -185,7 +191,7 @@ export default function TeamBuilder({
         <button
           onClick={() => {
             updatePlayerSlots(currentSlots)
-            onStart(currentSlots)
+            onBack()
           }}
           disabled={!canStart}
           style={{
@@ -240,7 +246,7 @@ export default function TeamBuilder({
             {FORMATION_PRESETS.map((f) => (
               <button
                 key={f.name}
-                onClick={() => setSelectedFormation(f.name)}
+                onClick={() => selectFormation(f.name)}
                 style={{
                   fontFamily: "var(--font-display)",
                   fontSize: 11,
@@ -266,7 +272,7 @@ export default function TeamBuilder({
               </button>
             ))}
             <button
-              onClick={() => setSelectedFormation("Customizada")}
+              onClick={clearTeam}
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
