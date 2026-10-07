@@ -28,15 +28,16 @@ export default function MainScreen() {
 
   return (
     <div
-      className={`fixed inset-0 bg-[url('/background.png')] bg-cover bg-center flex flex-col items-center justify-center min-h-screen w-full px-8 relative z-10 transition-all duration-700 ease-out transform-gpu ${
+      className={`fixed inset-0 bg-cover bg-center flex flex-col items-center justify-center min-h-screen w-full px-8 relative z-10 transition-all duration-700 ease-out transform-gpu ${
         visible ? "opacity-100 scale-100 animate-neon-on" : "opacity-0 scale-95"
       }`}
+      style={{ backgroundImage: "url('./background.png')" }}
     >
       {/* Light left overlay for performance */}
 
       {/* Top-left logo */}
       <img
-        src="/logo.png"
+        src="./logo.png"
         alt="Logo"
         className="absolute top-8 left-10 w-36 h-auto drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]"
       />

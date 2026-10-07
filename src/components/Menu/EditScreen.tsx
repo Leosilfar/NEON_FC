@@ -46,8 +46,8 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 bg-cover bg-center flex flex-col animate-neon-on"
-      style={{ backgroundImage: "url('/background.png')" }}
+      className="fixed inset-0 flex flex-col overflow-hidden bg-cover bg-center animate-neon-on"
+      style={{ backgroundImage: "url('./background.png')" }}
     >
       {/* Header */}
       <header className="flex items-center justify-between bg-[#00f0ff] text-black font-extrabold px-8 py-4 rounded-3xl mx-4 mt-4">
@@ -86,16 +86,16 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
       </nav>
 
       {/* Main layout */}
-      <div className="grid grid-cols-12 gap-6 w-full max-w-7xl mx-auto px-4 flex-1 mt-4 animate-smooth-neon">
+      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-4 overflow-y-auto lg:grid-cols-12 lg:gap-6 w-full max-w-7xl mx-auto px-4 mt-3 animate-smooth-neon">
         {activeTab === "appearance" ? (
           <>
             {/* Left – Appearance controls (7 cols) */}
-            <section className="col-span-7 space-y-6 overflow-y-auto max-h-[75vh] rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm">
+            <section className="min-h-0 h-auto lg:h-full lg:col-span-7 space-y-6 overflow-y-auto rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm">
               <AppearanceTab settings={draft} onChange={setDraft} />
             </section>
 
             {/* Right – Field controls + compact preview (5 cols) */}
-            <section className="col-span-5 space-y-4 rounded-2xl border border-cyan-400/20 bg-black/65 p-5 shadow-[0_0_24px_rgba(0,240,255,0.12)] backdrop-blur-sm">
+            <section className="min-h-0 h-auto lg:h-full lg:col-span-5 space-y-4 overflow-y-auto rounded-2xl border border-cyan-400/20 bg-black/65 p-5 shadow-[0_0_24px_rgba(0,240,255,0.12)] backdrop-blur-sm">
               {/* Compact Live Preview */}
               <div className="h-44 bg-black/60 border border-cyan-500/30 rounded-xl flex items-center justify-center overflow-hidden mb-4">
                 <div
@@ -131,8 +131,8 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
             <section
               className={
                 activeTab === "teamA"
-                  ? "col-span-12 space-y-6 overflow-y-auto max-h-[75vh] rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm"
-                  : "col-span-8 space-y-6 overflow-y-auto max-h-[75vh] rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm"
+                  ? "min-h-0 h-auto lg:h-full lg:col-span-12 space-y-6 overflow-y-auto rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm"
+                  : "min-h-0 h-auto lg:h-full lg:col-span-8 space-y-6 overflow-y-auto rounded-2xl border border-cyan-400/20 bg-black/70 p-5 shadow-[0_0_24px_rgba(0,240,255,0.14)] backdrop-blur-sm"
               }
             >
               {activeTab === "teamA" && (
@@ -149,7 +149,7 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
             </section>
 
             {activeTab !== "teamA" && (
-              <aside className="col-span-4 bg-black/75 border border-cyan-400/30 rounded-2xl p-5 text-cyan-300 h-[260px] flex flex-col items-center justify-center shadow-[0_0_24px_rgba(0,240,255,0.12)] backdrop-blur-sm">
+              <aside className="lg:col-span-4 bg-black/75 border border-cyan-400/30 rounded-2xl p-5 text-cyan-300 min-h-[260px] lg:h-full flex flex-col items-center justify-center shadow-[0_0_24px_rgba(0,240,255,0.12)] backdrop-blur-sm">
                 <h3 className="text-center font-bold tracking-widest mb-2">
                   LIVE PREVIEW
                 </h3>

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import type { GameSettings, GS, HudSnap, MatchMode, SlotPiece } from "@/types"
+import type {
+  GameSettings,
+  GS,
+  HudSnap,
+  MatchMode,
+  MatchSound,
+  SlotPiece,
+} from "@/types"
 
 import {
   FIXED_DT,
@@ -8,11 +15,13 @@ import {
   MAX_FRAME_DT,
   MAX_STEPS_PER_FRAME,
 } from "@/constants/physics"
+import { DEFAULT_GAME_CONTROLS } from "@/constants"
 
 import { makeGS } from "@/engine/state"
 import { stepMatchSimulation } from "@/engine/simulation"
 import { renderMatchFrame } from "@/components/match/renderMatchFrame"
 import { useMatchInput } from "@/hooks/useMatchInput"
+import { playSfx, setStadiumMode } from "@/utils/audio"
 
 export function useMatch(
   playerSlots: SlotPiece[],
@@ -49,8 +58,19 @@ export function useMatch(
       selectedId: gs.pieces.filter((p) => p.team === "A")[0]?.id ?? null,
       flashColor: null,
       goalColor: null,
+      kickoffCountdown: gs.kickoffCountdown,
+      kickoffDuration: gs.kickoffDuration,
+      kickoffPhase: gs.kickoffPhase,
     }
   })
+
+  const handleSound = useCallback(
+    (cue: MatchSound, intensity?: number) => {
+      if (cue === "match-start") setStadiumMode(matchMode === "normal")
+      playSfx(cue, intensity)
+    },
+    [matchMode],
+  )
 
   const hudRef = useRef(hud)
 
@@ -74,6 +94,9 @@ export function useMatch(
       flashColor:
         gs.goalColor && performance.now() < gs.flashUntil ? gs.goalColor : null,
       goalColor: gs.goalColor,
+      kickoffCountdown: gs.kickoffCountdown,
+      kickoffDuration: gs.kickoffDuration,
+      kickoffPhase: gs.kickoffPhase,
     }
   }, [])
 
@@ -90,6 +113,11 @@ export function useMatch(
         prev.finished !== next.finished ||
         prev.notification !== next.notification ||
         prev.goalColor !== next.goalColor ||
+        prev.kickoffDuration !== next.kickoffDuration ||
+        prev.kickoffPhase !== next.kickoffPhase ||
+        (next.kickoffPhase === "intro" &&
+          Math.abs(prev.kickoffCountdown - next.kickoffCountdown) >= 0.03) ||
+        Math.ceil(prev.kickoffCountdown) !== Math.ceil(next.kickoffCountdown) ||
         prev.flashColor !== next.flashColor ||
         prev.selectedId !== next.selectedId ||
         Math.floor(prev.timeLeft) !== Math.floor(next.timeLeft)
@@ -105,6 +133,7 @@ export function useMatch(
   const { keysRef, selectPieceAt } = useMatchInput({
     fieldRef,
     gsRef,
+    controls: settRef.current.controls ?? DEFAULT_GAME_CONTROLS,
     onStateChange: () => publishHud(true),
   })
 
@@ -114,6 +143,11 @@ export function useMatch(
     keysRef.current.clear()
     publishHud(true)
   }, [keysRef, matchMode, playerSlots, publishHud])
+
+  useEffect(() => {
+    setStadiumMode(false)
+    return () => setStadiumMode(false)
+  }, [matchMode])
 
   useEffect(() => {
     const c = canvasRef.current
@@ -141,11 +175,14 @@ export function useMatch(
           playerSlots: playerSlotsRef.current,
           dt: FIXED_DT,
           ts,
+          onSound: handleSound,
         })
 
         accRef.current -= FIXED_DT
         steps++
       }
+
+      if (gsRef.current.finished) setStadiumMode(false)
 
       if (steps === MAX_STEPS_PER_FRAME) accRef.current = 0
 
@@ -164,12 +201,13 @@ export function useMatch(
 
       if (ts >= nextHudSyncRef.current) {
         publishHud()
-        nextHudSyncRef.current = ts + 125
+        nextHudSyncRef.current =
+          gsRef.current.kickoffPhase === "intro" ? ts + 32 : ts + 125
       }
 
       rafRef.current = requestAnimationFrame(tick)
     },
-    [canvasRef, keysRef, publishHud],
+    [canvasRef, handleSound, keysRef, publishHud],
   )
 
   useEffect(() => {
@@ -187,6 +225,7 @@ export function useMatch(
   }
 
   function restartGame() {
+    setStadiumMode(false)
     gsRef.current = makeGS(playerSlotsRef.current, undefined, matchMode, true)
     keysRef.current.clear()
     publishHud(true)

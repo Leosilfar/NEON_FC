@@ -1,8 +1,4 @@
-import {
-  ALL_PIECE_TYPES,
-  PIECE_LABEL,
-  PIECE_ROLE,
-} from "@/constants"
+import { ALL_PIECE_TYPES, PIECE_LABEL, PIECE_ROLE } from "@/constants"
 
 import type { GPiece, GameSettings, PieceType } from "@/types"
 
@@ -19,6 +15,8 @@ export default function InventoryPanel({
 
   opponentPieces,
 
+  canPlacePiece,
+
   onPick,
 }: {
   settings: GameSettings
@@ -26,6 +24,8 @@ export default function InventoryPanel({
   avg: (k: keyof PieceAttrs) => number
 
   opponentPieces: GPiece[]
+
+  canPlacePiece: boolean
 
   onPick: (type: PieceType) => void
 }) {
@@ -92,8 +92,17 @@ export default function InventoryPanel({
             <div
               key={t}
               draggable
+              role="button"
+              tabIndex={0}
+              data-ui-sound={canPlacePiece ? "slot-place" : undefined}
               onDragStart={(e) => e.dataTransfer.setData("pieceType", t)}
               onClick={() => onPick(t)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  onPick(t)
+                }
+              }}
               style={{
                 padding: "6px 8px",
 

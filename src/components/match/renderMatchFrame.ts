@@ -3,6 +3,7 @@ import type { GameSettings, GS } from "@/types"
 import { BR, PR, VH, VW, clamp } from "@/constants/physics"
 import { getPlayRect } from "@/utils/canvasHelpers"
 import { cBall, cParticle, cPiece, cShockwave } from "@/utils/canvasDrawing"
+import { getKickoffLightLevel } from "@/utils/kickoffLighting"
 
 export function renderMatchFrame({
   ctx,
@@ -39,9 +40,19 @@ export function renderMatchFrame({
   const pr = PR * play.scale
   const br = BR * play.scale
   const teamA = gameState.pieces.filter((p) => p.team === "A")
-  const selId = teamA.find((p) => p.isPlayerControlled)?.id ?? teamA[gameState.selectedIdx]?.id ?? null
+  const kickoffElapsed = gameState.kickoffDuration - gameState.kickoffCountdown
+  const isIntroBlackout =
+    gameState.kickoffPhase === "intro" && gameState.kickoffCountdown > 0
+  const pieceReveal = getKickoffLightLevel(kickoffElapsed)
+  const selId =
+    teamA.find((p) => p.isPlayerControlled)?.id ??
+    teamA[gameState.selectedIdx]?.id ??
+    null
 
   for (const p of gameState.pieces) {
+    if (isIntroBlackout) {
+      ctx.globalAlpha = pieceReveal
+    }
     cPiece(
       ctx,
       p,
@@ -49,15 +60,20 @@ export function renderMatchFrame({
       toY(p.y),
       pr,
       settings.pieceColors[p.type],
-      p.id === selId,
+      p.id === selId && !isIntroBlackout,
       ts,
       settings.glowIntensity,
       settings.teamA.color,
       settings.teamB.color,
     )
+    ctx.globalAlpha = 1
   }
 
+  if (isIntroBlackout) {
+    ctx.globalAlpha = pieceReveal
+  }
   cBall(ctx, toX(gameState.ball.x), toY(gameState.ball.y), br, ts)
+  ctx.globalAlpha = 1
 
   for (const w of gameState.shockwaves) {
     cShockwave(ctx, w, toX, toY, play.scale)

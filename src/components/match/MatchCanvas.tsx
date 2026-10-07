@@ -3,8 +3,10 @@ import type { RefObject } from "react"
 import { FieldLines } from "@/components/common"
 
 import type { PlayRect } from "@/types"
+import type { KickoffPhase } from "@/types"
 
 import { CORNER_RADIUS, VW } from "@/constants/physics"
+import { getKickoffLightLevel } from "@/utils/kickoffLighting"
 
 export default function MatchCanvas({
   fieldRef,
@@ -26,6 +28,12 @@ export default function MatchCanvas({
   goalColor,
 
   accentColor,
+
+  kickoffCountdown,
+
+  kickoffDuration,
+
+  kickoffPhase,
 
   onFieldClick,
 }: {
@@ -49,8 +57,21 @@ export default function MatchCanvas({
 
   accentColor: string
 
+  kickoffCountdown: number
+
+  kickoffDuration: number
+
+  kickoffPhase: KickoffPhase
+
   onFieldClick: (clientX: number, clientY: number) => void
 }) {
+  const kickoffElapsed = kickoffDuration - kickoffCountdown
+  const lightsReveal = getKickoffLightLevel(kickoffElapsed)
+  const fieldBlackoutOpacity = 1 - lightsReveal
+  const borderAlpha = Math.round(lightsReveal * 220)
+    .toString(16)
+    .padStart(2, "0")
+
   return (
     <div
       ref={fieldRef}
@@ -99,6 +120,80 @@ export default function MatchCanvas({
             zIndex: 1,
           }}
         />
+      )}
+      {kickoffPhase === "intro" && kickoffCountdown > 0 && (
+        <div
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            left: playRect.x,
+            top: playRect.y,
+            width: playRect.w,
+            height: playRect.h,
+            zIndex: 9,
+            borderRadius: (CORNER_RADIUS / VW) * playRect.w,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "inherit",
+              background: "#02030a",
+              opacity: fieldBlackoutOpacity,
+              pointerEvents: "none",
+              transition: "opacity 140ms linear",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 1,
+              borderRadius: "inherit",
+              border: `1px solid ${accentColor}${borderAlpha}`,
+              boxShadow: `inset 0 0 ${48 * lightsReveal}px ${accentColor}66, 0 0 ${34 * lightsReveal}px ${accentColor}bb`,
+              background: `radial-gradient(ellipse at center, ${accentColor}22, transparent 72%)`,
+              opacity: lightsReveal,
+              pointerEvents: "none",
+              transition:
+                "opacity 140ms linear, box-shadow 140ms linear, border-color 140ms linear",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              zIndex: 1,
+              left: "50%",
+              top: "30%",
+              transform: "translate(-50%, -50%)",
+              textAlign: "center",
+              color: "#fff",
+              fontFamily: "var(--font-display)",
+              fontWeight: 900,
+              textShadow: `0 0 12px ${accentColor}, 0 0 32px ${accentColor}`,
+            }}
+          >
+            <div
+              style={{
+                fontSize: "clamp(12px, 1.4vw, 18px)",
+                letterSpacing: "0.35em",
+              }}
+            >
+              A PARTIDA COMEÇA EM
+            </div>
+            <div
+              key={Math.ceil(kickoffCountdown)}
+              style={{
+                fontSize: "clamp(46px, 8vw, 92px)",
+                lineHeight: 1,
+                animation: "kickoff-count 0.45s ease-out",
+              }}
+            >
+              {kickoffCountdown < 0.35 ? "VAI" : Math.ceil(kickoffCountdown)}
+            </div>
+          </div>
+        </div>
       )}
       <canvas
         ref={canvasRef}

@@ -98,6 +98,17 @@ export const BG_PRESETS: Record<BgPreset, BgEntry> = {
   },
 }
 
+export const DEFAULT_GAME_CONTROLS = {
+  moveUp: "KeyW",
+  moveDown: "KeyS",
+  moveLeft: "KeyA",
+  moveRight: "KeyD",
+  rotateLeft: "KeyQ",
+  rotateRight: "KeyE",
+  selectNearest: "Tab",
+  pause: "Escape",
+} as const
+
 export const DEFAULT_SETTINGS: GameSettings = {
   pieceColors: {
     triangle: "#f5e642",
@@ -144,6 +155,18 @@ export const DEFAULT_SETTINGS: GameSettings = {
   showScanlines: true,
 
   showGrid: true,
+
+  masterVolume: 100,
+
+  musicVolume: 80,
+
+  sfxVolume: 80,
+
+  stadiumVolume: 22,
+
+  mutedMusicTracks: [],
+
+  controls: DEFAULT_GAME_CONTROLS,
 
   difficulty: "medium",
 }

@@ -12,10 +12,7 @@ import { FORMATION_PRESETS } from "@/constants"
 import { GameContext } from "@/context/GameContext"
 import { makeGS } from "@/engine/state"
 
-import {
-  changeRoleKeepingOneGK,
-  isTeamValid,
-} from "@/utils/validators"
+import { changeRoleKeepingOneGK, isTeamValid } from "@/utils/validators"
 
 import TacticalField from "./TacticalField"
 import InventoryPanel from "./InventoryPanel"
@@ -31,8 +28,7 @@ export default function TeamBuilder({
   const { playerSlots, updatePlayerSlots } = useContext(GameContext)!
   const savedRoles = playerSlots.map((slot) => slot.role ?? "MEI")
   const savedFormation = FORMATION_PRESETS.find(
-    (formation) =>
-      formation.roles?.join(",") === savedRoles.join(","),
+    (formation) => formation.roles?.join(",") === savedRoles.join(","),
   )
   const [selectedFormation, setSelectedFormation] = useState<string>(
     savedFormation?.name ?? "Customizada",
@@ -40,7 +36,7 @@ export default function TeamBuilder({
   const [roles, setRoles] = useState<Role[]>(() =>
     savedRoles.length === 5
       ? savedRoles
-      : FORMATION_PRESETS[0].roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"],
+      : (FORMATION_PRESETS[0].roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"]),
   )
   const [slots, setSlots] = useState<(SlotPiece | null)[]>(() =>
     playerSlots.length === 5
@@ -55,9 +51,7 @@ export default function TeamBuilder({
     () =>
       roles.map((role, i) => {
         const slot = slots[i]
-        return slot
-          ? { ...slot, role }
-          : { id: i + 1, type: "circle", role }
+        return slot ? { ...slot, role } : { id: i + 1, type: "circle", role }
       }),
     [roles, slots],
   )
@@ -71,11 +65,8 @@ export default function TeamBuilder({
     setSelectedFormation(formationName)
     if (formationName === "Customizada") return
 
-    const formation = FORMATION_PRESETS.find(
-      (p) => p.name === formationName,
-    )
-    const newRoles =
-      formation?.roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"]
+    const formation = FORMATION_PRESETS.find((p) => p.name === formationName)
+    const newRoles = formation?.roles ?? ["GOL", "ZAG", "MEI", "ATA", "ATA"]
     setRoles(newRoles)
     setSlots((prev) => {
       const next = Array(newRoles.length).fill(null)
@@ -321,9 +312,15 @@ export default function TeamBuilder({
               settings={settings}
               avg={avg}
               opponentPieces={opponentPreviewPieces}
+              canPlacePiece={
+                pendingSlot !== null || slots.some((slot) => slot === null)
+              }
               onPick={(t) => {
                 const target = pendingSlot ?? slots.findIndex((s) => !s)
-                if (target !== -1) drop(target, t)
+                if (target !== -1) {
+                  drop(target, t)
+                  return
+                }
                 setSelectedType(t)
               }}
             />

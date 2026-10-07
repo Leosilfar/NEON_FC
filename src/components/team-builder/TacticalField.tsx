@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion"
+import { useEffect, useRef, useState } from "react"
 
 import { ALL_ROLES } from "@/constants"
 
@@ -29,6 +30,8 @@ export default function TacticalField({
   onChangeRole: (index: number, role: Role) => void
   onSlotClick?: (index: number) => void
 }) {
+  const [openRoleIndex, setOpenRoleIndex] = useState<number | null>(null)
+  const roleDropdownRef = useRef<HTMLDivElement>(null)
   const ac = settings.accentColor
 
   const nodes = computeTacticalUiPositions(roles)
@@ -42,6 +45,29 @@ export default function TacticalField({
   const backgroundStyle = {
     background: "linear-gradient(180deg,rgba(5,8,20,0.94),rgba(5,2,18,0.98))",
   }
+
+  useEffect(() => {
+    if (openRoleIndex === null) return
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !roleDropdownRef.current?.contains(event.target)
+      ) {
+        setOpenRoleIndex(null)
+      }
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenRoleIndex(null)
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsideClick)
+    document.addEventListener("keydown", closeOnEscape)
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick)
+      document.removeEventListener("keydown", closeOnEscape)
+    }
+  }, [openRoleIndex])
 
   return (
     <div
@@ -105,6 +131,7 @@ export default function TacticalField({
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
                 transform: "translate(-50%,-50%)",
+                zIndex: openRoleIndex === i ? 40 : 1,
                 width: "clamp(62px, 14%, 82px)",
                 height: "clamp(56px, 11%, 68px)",
                 display: "flex",
@@ -125,6 +152,25 @@ export default function TacticalField({
                   if (selectedType && !slots[i]) onPlace(i, selectedType)
                   else if (slots[i]) onRemove(i)
                 }}
+                onKeyDown={(event) => {
+                  if (
+                    event.target === event.currentTarget &&
+                    (event.key === "Enter" || event.key === " ")
+                  ) {
+                    event.preventDefault()
+                    if (onSlotClick) onSlotClick(i)
+                    if (selectedType && !slots[i]) onPlace(i, selectedType)
+                    else if (slots[i]) onRemove(i)
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Slot ${i + 1}, ${roles[i]}${
+                  piece ? ", ocupado" : ", vazio"
+                }`}
+                data-ui-sound={
+                  selectedType && !piece ? "slot-place" : undefined
+                }
                 initial={false}
                 animate={
                   piece
@@ -239,9 +285,10 @@ export default function TacticalField({
                   </AnimatePresence>
                 </div>
 
-                {/* Seletor de Posição (Role) */}
                 <div
+                  ref={openRoleIndex === i ? roleDropdownRef : undefined}
                   style={{
+                    position: "relative",
                     width: "100%",
                     display: "flex",
                     alignItems: "center",
@@ -249,32 +296,118 @@ export default function TacticalField({
                     zIndex: 2,
                   }}
                 >
-                  <select
-                    value={roles[i]}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onChangeRole(i, e.target.value as Role)}
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={openRoleIndex === i}
+                    aria-label={`Alterar posição: ${roles[i]}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setOpenRoleIndex(openRoleIndex === i ? null : i)
+                    }}
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
-                      padding: "2px 6px",
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      padding: "3px 10px",
                       borderRadius: 999,
-                      background: "rgba(0,0,0,0.75)",
-                      color: "white",
-                      border: `1px solid ${piece ? color : ac + "33"}`,
-                      height: 22,
+                      background:
+                        openRoleIndex === i ? `${ac}35` : "rgba(0,0,0,0.8)",
+                      color: piece ? color : "#e0f7ff",
+                      border: `1px solid ${
+                        openRoleIndex === i ? ac : piece ? color : `${ac}66`
+                      }`,
+                      boxShadow:
+                        openRoleIndex === i
+                          ? `0 0 12px ${ac}88`
+                          : `0 0 7px ${ac}33`,
+                      minHeight: 24,
                       cursor: "pointer",
+                      transition: "all 0.18s ease",
                     }}
                   >
-                    {ALL_ROLES.map((r) => {
-                      const disableG =
-                        r === "GOL" && gkCount > 0 && roles[i] !== "GOL"
-                      return (
-                        <option key={r} value={r} disabled={disableG}>
-                          {r}
-                        </option>
-                      )
-                    })}
-                  </select>
+                    {roles[i]}
+                    <span
+                      aria-hidden="true"
+                      style={{ marginLeft: 5, opacity: 0.7 }}
+                    >
+                      ▾
+                    </span>
+                  </button>
+                  <AnimatePresence>
+                    {openRoleIndex === i && (
+                      <motion.div
+                        role="listbox"
+                        aria-label="Posições disponíveis"
+                        initial={{ opacity: 0, y: -5, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                        transition={{ duration: 0.14 }}
+                        style={{
+                          position: "absolute",
+                          top: pos.y > 68 ? "auto" : "calc(100% + 5px)",
+                          bottom: pos.y > 68 ? "calc(100% + 5px)" : "auto",
+                          left: "calc(50% - 43px)",
+                          minWidth: 86,
+                          width: 86,
+                          padding: 4,
+                          borderRadius: 12,
+                          border: `1px solid ${ac}aa`,
+                          background: "rgba(5, 8, 20, 0.97)",
+                          boxShadow: `0 0 18px ${ac}55, inset 0 0 14px ${ac}12`,
+                          backdropFilter: "blur(12px)",
+                          zIndex: 60,
+                        }}
+                      >
+                        {ALL_ROLES.map((role) => {
+                          const goalKeeperUnavailable =
+                            role === "GOL" && gkCount > 0 && roles[i] !== "GOL"
+                          return (
+                            <button
+                              key={role}
+                              type="button"
+                              role="option"
+                              aria-selected={roles[i] === role}
+                              disabled={goalKeeperUnavailable}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                onChangeRole(i, role)
+                                setOpenRoleIndex(null)
+                              }}
+                              style={{
+                                display: "block",
+                                width: "100%",
+                                padding: "5px 9px",
+                                border: 0,
+                                borderRadius: 8,
+                                background:
+                                  roles[i] === role ? `${ac}35` : "transparent",
+                                color:
+                                  roles[i] === role
+                                    ? ac
+                                    : goalKeeperUnavailable
+                                      ? "rgba(255,255,255,0.28)"
+                                      : "#e0f7ff",
+                                fontFamily: "var(--font-mono)",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                letterSpacing: "0.08em",
+                                textAlign: "left",
+                                cursor: goalKeeperUnavailable
+                                  ? "not-allowed"
+                                  : "pointer",
+                                textShadow:
+                                  roles[i] === role ? `0 0 8px ${ac}` : "none",
+                              }}
+                            >
+                              {role}
+                            </button>
+                          )
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             </div>

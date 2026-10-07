@@ -22,6 +22,17 @@ export interface PieceAttrs {
   rebound: number
 }
 
+export interface GameControls {
+  moveUp: string
+  moveDown: string
+  moveLeft: string
+  moveRight: string
+  rotateLeft: string
+  rotateRight: string
+  selectNearest: string
+  pause: string
+}
+
 export interface GameSettings {
   showFps?: boolean
 
@@ -52,6 +63,12 @@ export interface GameSettings {
   musicVolume?: number
 
   sfxVolume?: number
+
+  stadiumVolume?: number
+
+  mutedMusicTracks?: string[]
+
+  controls?: GameControls
 
   language?: string
 

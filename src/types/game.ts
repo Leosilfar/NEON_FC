@@ -8,6 +8,28 @@ export type Screen = "SPLASH" | "MAIN" | "SETTINGS" | "EDITAR" | "ELENCO" | "STA
 
 export type Role = "GOL" | "ZAG" | "LAT" | "VOL" | "MEI" | "ATA"
 
+export type MatchSound = "match-start" | "goal" | "ball-piece" | "piece-piece" | "wall" | "goal-line" | "whistle" | "lights-on"
+
+export type KickoffPhase = "intro" | "regroup" | null
+
+export interface KickoffTarget {
+  x: number
+  y: number
+}
+
+export interface KickoffRecoveryState {
+  phase: "reposition" | "align" | "strike"
+  targetX: number
+  targetY: number
+  strikeAngle: number
+  pieceRotation: number
+  plannedBallX: number
+  plannedBallY: number
+  bestCenterDistance: number
+  bestPieceDistance: number
+  noProgressTime: number
+}
+
 export interface GPiece {
   id: number
 
@@ -125,6 +147,32 @@ export interface GS {
 
   goalCooldown: number
 
+  kickoffCountdown: number
+
+  kickoffDuration: number
+
+  kickoffPhase: KickoffPhase
+
+  kickoffConductorId: number | null
+
+  kickoffTeam: Team | null
+
+  kickoffTargets: Record<number, KickoffTarget>
+
+  kickoffYieldSides: Record<number, -1 | 1>
+
+  kickoffConductorCarrying: boolean
+
+  kickoffConductorStriking: boolean
+
+  kickoffCenterBraking: boolean
+
+  kickoffRecovery: KickoffRecoveryState | null
+
+  kickoffCarryComplete: boolean
+
+  collisionCooldowns: Record<string, number>
+
   pieceVx: number
 
   pieceVy: number
@@ -172,6 +220,12 @@ export interface HudSnap {
   flashColor: string | null
 
   goalColor: string | null
+
+  kickoffCountdown: number
+
+  kickoffDuration: number
+
+  kickoffPhase: KickoffPhase
 }
 
 export interface PieceMotionWatch {

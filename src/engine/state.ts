@@ -17,6 +17,11 @@ const RANDOM_AWAY_PIECES: PieceType[] = [
 ]
 const RANDOM_AWAY_ROLES: Role[] = ["ZAG", "LAT", "VOL", "MEI", "ATA"]
 
+interface MutablePoint {
+  x: number
+  y: number
+}
+
 function randomItem<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]
 }
@@ -48,7 +53,7 @@ function createRandomAwayFormation(): SlotPiece[] {
  * Only the X axis is adjusted (towards the piece's own half) so we never break
  * the vertical latereality (y) of the defensive/offensive lines. Y is untouched.
  */
-function pushOutOfCenterX(piece: { x: number; y: number }, side: "HOME" | "AWAY") {
+function pushOutOfCenterX(piece: MutablePoint, side: "HOME" | "AWAY") {
   const cx = VW / 2
   const cy = VH / 2
   const r = CENTER_CIRCLE_RADIUS
@@ -62,9 +67,10 @@ function pushOutOfCenterX(piece: { x: number; y: number }, side: "HOME" | "AWAY"
     const projectedX = cx + nx * r
     const projectedY = cy + ny * r
 
-    piece.x = side === "HOME"
-      ? Math.min(projectedX, cx - r)
-      : Math.max(projectedX, cx + r)
+    piece.x =
+      side === "HOME"
+        ? Math.min(projectedX, cx - r)
+        : Math.max(projectedX, cx + r)
     piece.y = projectedY
   }
 }
@@ -123,7 +129,11 @@ export function makeGS(
     const awayNorm = computeHomeNormalized(binAway)
     const filledAway = [...resolvedAwayFormation]
     while (filledAway.length < 5) {
-      filledAway.push({ type: "circle", id: filledAway.length + 1, role: "MEI" })
+      filledAway.push({
+        type: "circle",
+        id: filledAway.length + 1,
+        role: "MEI",
+      })
     }
     opponentSlots = filledAway.slice(0, 5)
     away = filledAway.slice(0, 5).map((s, i) => {
@@ -144,7 +154,13 @@ export function makeGS(
     })
   } else {
     // Mirror HOME formation for AWAY
-    const awayTypes: PieceType[] = ["circle", "triangle", "triangle", "square", "square"]
+    const awayTypes: PieceType[] = [
+      "circle",
+      "triangle",
+      "triangle",
+      "square",
+      "square",
+    ]
     opponentSlots = filledHome.slice(0, 5).map((s, i) => ({
       id: 101 + i,
       role: s.role,
@@ -182,6 +198,19 @@ export function makeGS(
     notification: null,
     notifEnd: 0,
     goalCooldown: 0,
+    kickoffCountdown: 3,
+    kickoffDuration: 3,
+    kickoffPhase: "intro",
+    kickoffConductorId: null,
+    kickoffTeam: null,
+    kickoffTargets: {},
+    kickoffYieldSides: {},
+    kickoffConductorCarrying: false,
+    kickoffConductorStriking: false,
+    kickoffCenterBraking: false,
+    kickoffRecovery: null,
+    kickoffCarryComplete: false,
+    collisionCooldowns: {},
     pieceVx: 0,
     pieceVy: 0,
     particles: [],

@@ -76,6 +76,9 @@ export default function Match({
         notification={hud.notification}
         goalColor={hud.goalColor}
         accentColor={settings.accentColor}
+        kickoffCountdown={hud.kickoffCountdown}
+        kickoffDuration={hud.kickoffDuration}
+        kickoffPhase={hud.kickoffPhase}
         onFieldClick={selectPieceAt}
       />
       <MatchHud settings={settings} hud={hud} onPause={pauseToggle} />

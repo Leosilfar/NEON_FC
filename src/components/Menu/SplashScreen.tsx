@@ -25,7 +25,7 @@ export default function SplashScreen() {
     >
       {/* Top-left header */}
       <div className="absolute top-4 left-4 flex items-center space-x-2">
-        <img src="/logo.png" alt="Logo" className="h-8 w-8" />
+        <img src="./logo.png" alt="Logo" className="h-8 w-8" />
         <span className="text-cyan-400 text-2xl font-bold tracking-widest">
           NEON FC
         </span>
@@ -33,7 +33,7 @@ export default function SplashScreen() {
 
       {/* Center logo */}
       <div className="flex-1 flex items-center justify-center">
-        <img src="/logo.png" alt="FC NEON Logo" className="h-48 w-auto" />
+        <img src="./logo.png" alt="FC NEON Logo" className="h-48 w-auto" />
       </div>
 
       {/* Bottom pill */}

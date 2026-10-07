@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { PR, VH, VW, vdist } from "@/constants/physics"
 import { selectClosestPlayerToBall } from "@/engine/ai"
-import type { GS } from "@/types"
+import type { GameControls, GS } from "@/types"
 import { getPlayRect } from "@/utils/canvasHelpers"
 
 export interface AimState {
@@ -16,10 +16,12 @@ export interface AimState {
 export function useMatchInput({
   fieldRef,
   gsRef,
+  controls,
   onStateChange,
 }: {
   fieldRef: React.RefObject<HTMLDivElement | null>
   gsRef: React.MutableRefObject<GS>
+  controls: GameControls
   onStateChange: () => void
 }) {
   const keysRef = useRef<Set<string>>(new Set())
@@ -68,19 +70,30 @@ export function useMatchInput({
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"].includes(e.key)) {
+      const key = e.code
+      if (
+        [
+          controls.moveUp,
+          controls.moveDown,
+          controls.moveLeft,
+          controls.moveRight,
+          controls.rotateLeft,
+          controls.rotateRight,
+          controls.selectNearest,
+          controls.pause,
+        ].includes(key)
+      ) {
         e.preventDefault()
       }
 
       keysRef.current.add(key)
 
-      if (key === "Tab") {
+      if (key === controls.selectNearest) {
         selectClosestPlayerToBall(gsRef.current, "A")
         onStateChange()
       }
 
-      if (e.key === "Escape" || e.key === "p" || e.key === "P") {
+      if (key === controls.pause) {
         if (gsRef.current.finished) return
         gsRef.current.paused = !gsRef.current.paused
         onStateChange()
@@ -88,8 +101,7 @@ export function useMatchInput({
     }
 
     const onUp = (e: KeyboardEvent) => {
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
-      keysRef.current.delete(key)
+      keysRef.current.delete(e.code)
     }
 
     window.addEventListener("keydown", onDown)
@@ -99,13 +111,19 @@ export function useMatchInput({
       window.removeEventListener("keydown", onDown)
       window.removeEventListener("keyup", onUp)
     }
-  }, [gsRef, onStateChange])
+  }, [controls, gsRef, onStateChange])
 
   const pointerHandlers = useMemo(
     () => ({
       onPointerDown: (clientX: number, clientY: number) => {
         selectPieceAt(clientX, clientY)
-        setAim({ active: true, startX: clientX, startY: clientY, x: clientX, y: clientY })
+        setAim({
+          active: true,
+          startX: clientX,
+          startY: clientY,
+          x: clientX,
+          y: clientY,
+        })
       },
       onPointerMove: (clientX: number, clientY: number) => {
         setAim((prev) => (prev ? { ...prev, x: clientX, y: clientY } : prev))
