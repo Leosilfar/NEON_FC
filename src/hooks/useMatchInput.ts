@@ -71,6 +71,12 @@ export function useMatchInput({
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
       const key = e.code
+      if (key === "F3") {
+        e.preventDefault()
+        gsRef.current.aiDebugEnabled = !gsRef.current.aiDebugEnabled
+        onStateChange()
+        return
+      }
       if (
         [
           controls.moveUp,
@@ -81,6 +87,7 @@ export function useMatchInput({
           controls.rotateRight,
           controls.selectNearest,
           controls.pause,
+          controls.kick ?? "Space",
         ].includes(key)
       ) {
         e.preventDefault()

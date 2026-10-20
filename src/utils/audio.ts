@@ -118,6 +118,14 @@ let sfxContext: AudioContext | null = null
 let sfxCompressor: DynamicsCompressorNode | null = null
 let sfxOutput: GainNode | null = null
 
+function getStadiumReverbLevel() {
+  return 0.48 * Math.sqrt(stadiumVolume)
+}
+
+function getStadiumCrowdLevel() {
+  return stadiumVolume * 0.35
+}
+
 const stadiumCrowd = new Howl({
   src: [`${import.meta.env.BASE_URL}audio/arrowhead-stadium-crowd.wav`],
   volume: 0,
@@ -145,7 +153,7 @@ function connectStadiumAudio() {
   const directGain = audioContext.createGain()
   const reverb = audioContext.createConvolver()
   const reverbGain = audioContext.createGain()
-  const duration = 1.6
+  const duration = 3.2
   const impulseLength = Math.floor(audioContext.sampleRate * duration)
   const impulse = audioContext.createBuffer(
     2,
@@ -153,17 +161,33 @@ function connectStadiumAudio() {
     audioContext.sampleRate,
   )
 
+  reverb.normalize = false
   for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
     const samples = impulse.getChannelData(channel)
+    const reflections = [
+      { time: 0.071 + channel * 0.009, gain: 0.68 },
+      { time: 0.126 + channel * 0.014, gain: 0.5 },
+      { time: 0.203 + channel * 0.019, gain: 0.37 },
+      { time: 0.319 + channel * 0.023, gain: 0.27 },
+      { time: 0.487 + channel * 0.031, gain: 0.19 },
+    ]
+
     for (let index = 0; index < impulseLength; index++) {
-      const decay = (1 - index / impulseLength) ** 2.8
-      samples[index] = (Math.random() * 2 - 1) * decay
+      const decay = (1 - index / impulseLength) ** 2.2
+      samples[index] = (Math.random() * 2 - 1) * decay * 0.001
+    }
+
+    for (const reflection of reflections) {
+      const sampleIndex = Math.round(reflection.time * audioContext.sampleRate)
+      if (sampleIndex < impulseLength) {
+        samples[sampleIndex] += reflection.gain
+      }
     }
   }
 
   reverb.buffer = impulse
   directGain.gain.value = 1
-  reverbGain.gain.value = stadiumMode ? 0.07 : 0
+  reverbGain.gain.value = stadiumMode ? getStadiumReverbLevel() : 0
 
   masterGain.disconnect()
   masterGain.connect(directGain)
@@ -186,7 +210,11 @@ export function setStadiumMode(enabled: boolean) {
 
   const now = audioContext.currentTime
   stadiumGraph.reverbGain.gain.cancelScheduledValues(now)
-  stadiumGraph.reverbGain.gain.setTargetAtTime(enabled ? 0.07 : 0, now, 0.35)
+  stadiumGraph.reverbGain.gain.setTargetAtTime(
+    enabled ? getStadiumReverbLevel() : 0,
+    now,
+    0.35,
+  )
 
   if (enabled) {
     if (stadiumCrowdStopTimer !== null) {
@@ -196,14 +224,14 @@ export function setStadiumMode(enabled: boolean) {
     if (stadiumCrowd.playing() && stadiumCrowdSoundId !== null) {
       stadiumCrowd.fade(
         stadiumCrowd.volume(),
-        stadiumVolume,
-        1200,
+        getStadiumCrowdLevel(),
+        2200,
         stadiumCrowdSoundId,
       )
     } else {
       stadiumCrowd.volume(0)
       stadiumCrowdSoundId = stadiumCrowd.play()
-      stadiumCrowd.fade(0, stadiumVolume, 1200, stadiumCrowdSoundId)
+      stadiumCrowd.fade(0, getStadiumCrowdLevel(), 2200, stadiumCrowdSoundId)
     }
     return
   }
@@ -215,7 +243,7 @@ export function setStadiumMode(enabled: boolean) {
     stadiumCrowdSoundId !== null &&
     stadiumCrowd.playing(stadiumCrowdSoundId)
   ) {
-    stadiumCrowd.fade(0.2, 0, 900, stadiumCrowdSoundId)
+    stadiumCrowd.fade(stadiumCrowd.volume(), 0, 1400, stadiumCrowdSoundId)
     stadiumCrowdStopTimer = window.setTimeout(() => {
       if (!stadiumMode && stadiumCrowdSoundId !== null) {
         stadiumCrowd.stop(stadiumCrowdSoundId)
@@ -281,11 +309,14 @@ export function setAudioVolumes(volumes: {
   Howler.volume(masterVolume)
   activeMusic?.volume(musicVolume)
   if (stadiumCrowdSoundId !== null) {
-    stadiumCrowd.volume(stadiumMode ? stadiumVolume : 0, stadiumCrowdSoundId)
+    stadiumCrowd.volume(
+      stadiumMode ? getStadiumCrowdLevel() : 0,
+      stadiumCrowdSoundId,
+    )
   }
   if (stadiumGraph && Howler.ctx) {
     stadiumGraph.reverbGain.gain.setTargetAtTime(
-      stadiumMode ? 0.07 * stadiumVolume : 0,
+      stadiumMode ? getStadiumReverbLevel() : 0,
       Howler.ctx.currentTime,
       0.2,
     )

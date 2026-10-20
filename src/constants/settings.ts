@@ -107,6 +107,7 @@ export const DEFAULT_GAME_CONTROLS = {
   rotateRight: "KeyE",
   selectNearest: "Tab",
   pause: "Escape",
+  kick: "Space",
 } as const
 
 export const DEFAULT_SETTINGS: GameSettings = {

@@ -6,13 +6,22 @@ import type {
   Team,
 } from "@/types"
 
-import { MOVE_SPD, PR, VH, VW, clamp, vdist } from "@/constants/physics"
+import { BR, MOVE_SPD, PR, VH, VW, clamp, vdist } from "@/constants/physics"
+import { getPieceKickNormal } from "@/engine/physics"
 import {
   awayToCanvas,
   computeHomeNormalized,
   homeToCanvas,
 } from "@/utils/tactics"
 import type { GameSettings } from "@/types"
+import { perceiveBall } from "@/engine/ai/perception"
+import {
+  avoidTeammateCrowding,
+  chooseAction,
+  coordinateTeam,
+  makeStrategyContext,
+} from "@/engine/ai/strategy"
+import { getAiMaxSpeed, steerToTarget } from "@/engine/ai/steering"
 
 export type TeamState = "OFENSIVO" | "DEFENSIVO" | "NEUTRO"
 
@@ -20,6 +29,12 @@ export interface TacticalContext {
   possessionTeam: Team | null
   states: Record<Team, TeamState>
   closestToBall: GPiece | null
+  nearest: GPiece | null
+  nearestByTeam: Record<Team, GPiece | null>
+  distanceByTeam: Record<Team, number>
+  candidatePossession: Team | null
+  possessionConfidence: number
+  predictedBall: Vec
 }
 
 interface Vec {
@@ -31,6 +46,22 @@ type TargetIntent = "formation" | "ball" | "drive" | "goal"
 
 interface TacticalTarget extends Vec {
   intent: TargetIntent
+  aimX?: number
+  aimY?: number
+}
+
+function getKickApproachTarget(gs: GS, aimX: number, aimY: number): TacticalTarget {
+  const dx = aimX - gs.ball.x
+  const dy = aimY - gs.ball.y
+  const length = Math.hypot(dx, dy) || 1
+  const offset = PR + 8
+  return clampFieldTarget({
+    x: gs.ball.x - (dx / length) * offset,
+    y: gs.ball.y - (dy / length) * offset,
+    intent: "drive",
+    aimX,
+    aimY,
+  })
 }
 
 const PENALTY_DEPTH = 170
@@ -40,11 +71,6 @@ const BALL_CONTROL_RADIUS = 74
 const STATIONARY_REGION_RADIUS = PR * 1.6
 const STATIONARY_TIME_LIMIT = 1.5
 const UNSTUCK_DURATION = 0.65
-const MISTAKE_DURATION_MIN = 0.45
-const MISTAKE_DURATION_RANGE = 0.35
-const MISTAKE_OFFSET_MIN = PR * 3
-const MISTAKE_OFFSET_RANGE = PR * 3
-
 interface AiDifficultyProfile {
   pressRadius: number
   spinRadius: number
@@ -53,9 +79,7 @@ interface AiDifficultyProfile {
   goalShotDistance: number
   formationDiscipline: number
   separationStrength: number
-  mistakeChance: number
-  mistakeCooldownMin: number
-  mistakeCooldownRange: number
+  reactionDelay: number
 }
 
 const AI_DIFFICULTY: Record<
@@ -68,11 +92,9 @@ const AI_DIFFICULTY: Record<
     goalkeeperSpinRadius: 300,
     clearanceRadius: 260,
     goalShotDistance: 260,
-    formationDiscipline: 0.35,
+    formationDiscipline: 0.3,
     separationStrength: 1,
-    mistakeChance: 0.2,
-    mistakeCooldownMin: 3.5,
-    mistakeCooldownRange: 3,
+    reactionDelay: 0.34,
   },
   medium: {
     pressRadius: 820,
@@ -80,11 +102,9 @@ const AI_DIFFICULTY: Record<
     goalkeeperSpinRadius: 620,
     clearanceRadius: 390,
     goalShotDistance: 360,
-    formationDiscipline: 0.65,
+    formationDiscipline: 0.18,
     separationStrength: 1.2,
-    mistakeChance: 0.08,
-    mistakeCooldownMin: 5,
-    mistakeCooldownRange: 3.5,
+    reactionDelay: 0.18,
   },
   hard: {
     pressRadius: 1020,
@@ -92,16 +112,22 @@ const AI_DIFFICULTY: Record<
     goalkeeperSpinRadius: 1000,
     clearanceRadius: 540,
     goalShotDistance: 520,
-    formationDiscipline: 0.88,
-    separationStrength: 1.4,
-    mistakeChance: 0,
-    mistakeCooldownMin: 0,
-    mistakeCooldownRange: 0,
+    formationDiscipline: 0.06,
+    separationStrength: 1.15,
+    reactionDelay: 0.015,
   },
 }
 
-function getDifficultyProfile(settings: GameSettings): AiDifficultyProfile {
-  return AI_DIFFICULTY[settings.difficulty ?? "medium"]
+function getPlayerTeam(gs: GS): Team | null {
+  return gs.pieces.find((piece) => piece.isPlayerControlled)?.team ?? null
+}
+
+function getPieceDifficulty(
+  settings: GameSettings,
+  team: Team,
+  playerTeam: Team | null,
+): NonNullable<GameSettings["difficulty"]> {
+  return team === playerTeam ? "medium" : settings.difficulty ?? "medium"
 }
 
 function side(team: Team) {
@@ -200,13 +226,18 @@ export function getTacticalAiSpinDirections(
   settings: GameSettings,
 ): Map<number, number> {
   const directions = new Map<number, number>()
-  const profile = getDifficultyProfile(settings)
-  const primaryChasers = findPrimaryChasers(gs, profile.pressRadius)
+  const playerTeam = getPlayerTeam(gs)
+  const primaryChasers = findPrimaryChasers(gs, settings, playerTeam)
 
   for (const piece of gs.pieces) {
     if (piece.isPlayerControlled) continue
+    const profile = AI_DIFFICULTY[getPieceDifficulty(settings, piece.team, playerTeam)]
 
-    if (piece.role === "GOL") {
+    if (
+      piece.role === "GOL" &&
+      gs.aiDecisionStates[piece.id]?.action !== "PASS" &&
+      gs.aiDecisionStates[piece.id]?.action !== "SHOOT"
+    ) {
       const direction = side(piece.team)
       const guardingOwnHalf = piece.team === "A"
         ? gs.ball.x < MID_X + 120
@@ -217,13 +248,23 @@ export function getTacticalAiSpinDirections(
           profile.goalkeeperSpinRadius
       ) continue
 
-      const movingTowardGoal = gs.ball.vx * direction < -35
-      const interceptTime = movingTowardGoal
-        ? clamp((piece.x - gs.ball.x) / gs.ball.vx, 0, 0.8)
-        : 0
-      const targetX = gs.ball.x + gs.ball.vx * interceptTime
-      const targetY = gs.ball.y + gs.ball.vy * interceptTime
-      const targetAngle = Math.atan2(targetY - piece.y, targetX - piece.x)
+    const decision = gs.aiDecisionStates[piece.id]
+    const tacticalKick = decision &&
+      (decision.action === "PASS" || decision.action === "SHOOT")
+    const target = tacticalKick
+      ? { x: decision.kickTargetX, y: decision.kickTargetY }
+      : (() => {
+          const movingTowardGoal = gs.ball.vx * direction < -35
+          if (!movingTowardGoal) return { x: gs.ball.x, y: gs.ball.y }
+          const timeToGoal = clamp((ownGoalX(piece.team) - gs.ball.x) / gs.ball.vx, 0, 1.25)
+          const rawY = gs.ball.y + gs.ball.vy * timeToGoal
+          const span = VH - PR * 2
+          const period = span * 2
+          const folded = ((rawY - PR) % period + period) % period
+          const interceptY = PR + (folded <= span ? folded : period - folded)
+          return { x: ownGoalX(piece.team), y: interceptY }
+        })()
+    const targetAngle = Math.atan2(target.y - piece.y, target.x - piece.x)
       const currentAngle = piece.rot ?? (piece.team === "A" ? 0 : Math.PI)
       const angleDelta = Math.atan2(
         Math.sin(targetAngle - currentAngle),
@@ -236,25 +277,54 @@ export function getTacticalAiSpinDirections(
       continue
     }
 
-    if (!primaryChasers.has(piece.id)) continue
-    if (vdist(piece.x, piece.y, gs.ball.x, gs.ball.y) > profile.spinRadius) continue
+    const decision = gs.aiDecisionStates[piece.id]
+    const tacticalKick = decision &&
+      (decision.action === "PASS" || decision.action === "SHOOT")
+    if (!primaryChasers.has(piece.id) && !tacticalKick) continue
+    if (vdist(piece.x, piece.y, gs.ball.x, gs.ball.y) > (tacticalKick ? 220 : profile.spinRadius)) continue
 
-    const target = chooseSpinTarget(piece, gs, profile)
-    const normalX = gs.ball.x - piece.x
-    const normalY = gs.ball.y - piece.y
-    const normalLength = Math.hypot(normalX, normalY) || 1
-    const tangentX = -normalY / normalLength
-    const tangentY = normalX / normalLength
-    const aimX = target.x - gs.ball.x
-    const aimY = target.y - gs.ball.y
-    const alignment = tangentX * aimX + tangentY * aimY
-
-    if (Math.abs(alignment) > 0.001) {
-      directions.set(piece.id, Math.sign(alignment))
-    }
+    const target = tacticalKick
+      ? { x: decision.kickTargetX, y: decision.kickTargetY }
+      : chooseSpinTarget(piece, gs, profile)
+    const aimAngle = Math.atan2(target.y - gs.ball.y, target.x - gs.ball.x)
+    const desiredAngle = findKickFacingAngle(piece, gs.ball.x, gs.ball.y, aimAngle)
+    const currentAngle = piece.rot ?? (piece.team === "A" ? 0 : Math.PI)
+    const angleDelta = Math.atan2(
+      Math.sin(desiredAngle - currentAngle),
+      Math.cos(desiredAngle - currentAngle),
+    )
+    if (Math.abs(angleDelta) > 0.04) directions.set(piece.id, Math.sign(angleDelta))
   }
 
   return directions
+}
+
+function findKickFacingAngle(
+  piece: GPiece,
+  ballX: number,
+  ballY: number,
+  aimAngle: number,
+) {
+  const currentAngle = piece.rot ?? (piece.team === "A" ? 0 : Math.PI)
+  const symmetry = piece.type === "triangle" ? 3 : piece.type === "pentagon" ? 5 : piece.type === "line" ? 2 : 4
+  const base = piece.type === "circle" ? 0 : Math.PI / symmetry
+  let bestAngle = currentAngle
+  let bestScore = -Infinity
+  const samples = piece.type === "circle" ? 1 : 64
+  for (let index = 0; index < samples; index++) {
+    const angle = base + (index / samples) * Math.PI * 2
+    const candidate: GPiece = { ...piece, rot: angle }
+    const normal = getPieceKickNormal(candidate, ballX, ballY)
+    if (!normal || normal.dist > PR + 60) continue
+    const alignment = normal.nx * Math.cos(aimAngle) + normal.ny * Math.sin(aimAngle)
+    const turnCost = Math.abs(Math.atan2(Math.sin(angle - currentAngle), Math.cos(angle - currentAngle)))
+    const score = alignment - turnCost * 0.012
+    if (score > bestScore) {
+      bestScore = score
+      bestAngle = angle
+    }
+  }
+  return bestAngle
 }
 
 function closestOpponentToBall(gs: GS, team: Team) {
@@ -323,10 +393,17 @@ function goalTarget(piece: GPiece): TacticalTarget {
   }
 }
 
-function findPrimaryChasers(gs: GS, pressRadius: number) {
+function findPrimaryChasers(
+  gs: GS,
+  settings: GameSettings,
+  playerTeam: Team | null,
+) {
   const chasers = new Set<number>()
 
   for (const team of ["A", "B"] as Team[]) {
+    const pressRadius = AI_DIFFICULTY[
+      getPieceDifficulty(settings, team, playerTeam)
+    ].pressRadius
     const teamPieces = gs.pieces.filter(
       (piece) => piece.team === team && piece.role !== "GOL",
     )
@@ -349,20 +426,11 @@ function findPrimaryChasers(gs: GS, pressRadius: number) {
   return chasers
 }
 
-export function getTacticalContext(gs: GS): TacticalContext {
-  const nearest = nearestPieceToBall(gs.pieces, gs.ball)
-  const possessionTeam = nearest.distance < 210 ? nearest.piece?.team ?? null : null
-
-  return {
-    possessionTeam,
-    closestToBall: nearest.piece,
-    states: {
-      A: possessionTeam === null ? "NEUTRO" : possessionTeam === "A" ? "OFENSIVO" : "DEFENSIVO",
-      B: possessionTeam === null ? "NEUTRO" : possessionTeam === "B" ? "OFENSIVO" : "DEFENSIVO",
-    },
-  }
+export function getTacticalContext(gs: GS, dt = 1 / 120): TacticalContext {
+  const perception = perceiveBall(gs, dt)
+  const context = makeStrategyContext(perception, gs)
+  return { ...context, closestToBall: perception.nearest }
 }
-
 function goalkeeperTarget(piece: GPiece, gs: GS): TacticalTarget {
   const goalX = ownGoalX(piece.team)
   const direction = side(piece.team)
@@ -370,15 +438,17 @@ function goalkeeperTarget(piece: GPiece, gs: GS): TacticalTarget {
   const keeperDepth = clamp(distanceFromGoal * 0.22, PR * 1.5, PENALTY_DEPTH * 0.8)
   const keeperX = goalX + direction * keeperDepth
   const ballMovingTowardGoal = gs.ball.vx * direction < -35
-  const interceptTime = ballMovingTowardGoal
-    ? clamp((keeperX - gs.ball.x) / gs.ball.vx, 0, 0.8)
+  const timeToGoal = ballMovingTowardGoal
+    ? clamp((goalX - gs.ball.x) / gs.ball.vx, 0, 1.25)
     : 0
-  const predictedBallY = gs.ball.y + gs.ball.vy * interceptTime
-  const lineRatio = clamp(
-    keeperDepth / Math.max(distanceFromGoal, keeperDepth),
-    0,
-    0.82,
-  )
+  const rawY = gs.ball.y + gs.ball.vy * timeToGoal
+  const span = VH - PR * 2
+  const period = span * 2
+  const folded = ((rawY - PR) % period + period) % period
+  const predictedBallY = PR + (folded <= span ? folded : period - folded)
+  const lineRatio = ballMovingTowardGoal
+    ? 0.9
+    : clamp(keeperDepth / Math.max(distanceFromGoal, keeperDepth), 0, 0.82)
   const targetY =
     VH / 2 + (predictedBallY - VH / 2) * lineRatio
 
@@ -612,48 +682,6 @@ function getMotionWatch(piece: GPiece, gs: GS, dt: number): Vec | null {
   return { x: watch.escapeX, y: watch.escapeY }
 }
 
-function getDecisionMistake(
-  piece: GPiece,
-  gs: GS,
-  profile: AiDifficultyProfile,
-  dt: number,
-): Vec | null {
-  if (profile.mistakeChance === 0) return null
-
-  let state = gs.aiDecisionStates[piece.id]
-  if (!state) {
-    state = {
-      cooldown: 1 + Math.random() * 2,
-      mistakeTime: 0,
-      mistakeX: 0,
-      mistakeY: 0,
-    }
-    gs.aiDecisionStates[piece.id] = state
-  }
-
-  if (state.mistakeTime > 0) {
-    state.mistakeTime = Math.max(0, state.mistakeTime - dt)
-    return { x: state.mistakeX, y: state.mistakeY }
-  }
-
-  state.cooldown -= dt
-  if (state.cooldown > 0) return null
-
-  state.cooldown =
-    profile.mistakeCooldownMin + Math.random() * profile.mistakeCooldownRange
-  if (Math.random() >= profile.mistakeChance) return null
-
-  const angle = Math.random() * Math.PI * 2
-  const offset =
-    MISTAKE_OFFSET_MIN + Math.random() * MISTAKE_OFFSET_RANGE
-  state.mistakeX = Math.cos(angle) * offset
-  state.mistakeY = Math.sin(angle) * offset
-  state.mistakeTime =
-    MISTAKE_DURATION_MIN + Math.random() * MISTAKE_DURATION_RANGE
-
-  return { x: state.mistakeX, y: state.mistakeY }
-}
-
 function formationTarget(
   piece: GPiece,
   gs: GS,
@@ -688,88 +716,222 @@ function formationTarget(
 }
 
 export function applyTacticalAi(gs: GS, settings: GameSettings, dt: number) {
-  const context = getTacticalContext(gs)
-  const profile = getDifficultyProfile(settings)
-  const primaryChasers = findPrimaryChasers(gs, profile.pressRadius)
-
-  for (const piece of gs.pieces) {
-    piece.isPrimaryChaser = primaryChasers.has(piece.id)
-    if (piece.isPlayerControlled) continue
-
-    const ownGoalDistance =
-      (gs.ball.x - ownGoalX(piece.team)) * side(piece.team)
-    const isDefender =
-      piece.role === "ZAG" || piece.role === "LAT" || piece.role === "VOL"
-    const clearingOwnArea =
-      piece.isPrimaryChaser &&
-      isDefender &&
-      ownGoalDistance >= 0 &&
-      ownGoalDistance < profile.clearanceRadius
-    const tacticalTarget = piece.isPrimaryChaser
-      ? clearingOwnArea
-        ? defensiveClearanceTarget(piece, gs)
-        : ballTarget(gs)
-      : getTacticalTarget(piece, gs, context)
-    const formation = formationTarget(piece, gs, context)
-    const goalkeeper = piece.role === "GOL"
-    const target = piece.isPrimaryChaser || goalkeeper
-      ? tacticalTarget
-      : {
-          x:
-            tacticalTarget.x +
-            (formation.x - tacticalTarget.x) * profile.formationDiscipline,
-          y:
-            tacticalTarget.y +
-            (formation.y - tacticalTarget.y) * profile.formationDiscipline,
-          intent:
-            profile.formationDiscipline >= 0.8 &&
-            tacticalTarget.intent === "ball"
-              ? "formation"
-              : tacticalTarget.intent,
-        }
-    const mistake = getDecisionMistake(piece, gs, profile, dt)
-    const targetX = target.x + (mistake?.x ?? 0)
-    const targetY = target.y + (mistake?.y ?? 0)
-    const dx = targetX - piece.x
-    const dy = targetY - piece.y
-    const distance = Math.hypot(dx, dy)
-    const speedAttr = settings.attrs[piece.type].speed
-    const aggressive = piece.isPrimaryChaser || target.intent === "ball" || target.intent === "drive" || target.intent === "goal"
-    const maxSpeed =
-      MOVE_SPD *
-      (aggressive ? 0.56 + speedAttr / 170 : 0.28 + speedAttr / 260) *
-      (goalkeeper ? 1.35 : 1)
-    const arrival = aggressive ? 1 : clamp(distance / 115, 0.12, 1)
-    const desiredSpeed = maxSpeed * arrival
-    const sep = applySeparation(piece, gs.pieces)
-    const escape = getMotionWatch(piece, gs, dt)
-    const nx = distance > 0.001 ? dx / distance : 0
-    const ny = distance > 0.001 ? dy / distance : 0
-    const separationWeight =
-      (aggressive ? 90 : 145) * profile.separationStrength
-    const escapeWeight = escape ? 0.7 : 0
-    const desiredVx =
-      nx * desiredSpeed * (1 - escapeWeight) +
-      (escape?.x ?? 0) * maxSpeed * escapeWeight +
-      sep.x * separationWeight
-    const desiredVy =
-      ny * desiredSpeed * (1 - escapeWeight) +
-      (escape?.y ?? 0) * maxSpeed * escapeWeight +
-      sep.y * separationWeight
-    const accel =
-      (aggressive ? 13 + speedAttr / 14 : 7.2 + speedAttr / 25) *
-      (goalkeeper ? 1.5 : 1)
-    const t = Math.min(1, accel * dt)
-
-    piece.vx += (desiredVx - piece.vx) * t
-    piece.vy += (desiredVy - piece.vy) * t
-
-    const speed = Math.hypot(piece.vx, piece.vy)
-    if (speed > maxSpeed) {
-      piece.vx = (piece.vx / speed) * maxSpeed
-      piece.vy = (piece.vy / speed) * maxSpeed
+  const playerTeam = getPlayerTeam(gs)
+  const context = getTacticalContext(gs, dt)
+  const strategyContext = makeStrategyContext(context, gs)
+  if (gs.aiPassTimer !== undefined && gs.aiPassTimer > 0) {
+    gs.aiPassTimer = Math.max(0, gs.aiPassTimer - dt)
+    const receiver = gs.aiPassReceiverId === null || gs.aiPassReceiverId === undefined
+      ? null
+      : gs.pieces.find((candidate) => candidate.id === gs.aiPassReceiverId)
+    const received = receiver && gs.aiPassTeam === context.possessionTeam &&
+      vdist(receiver.x, receiver.y, gs.ball.x, gs.ball.y) <= PR + BR + 35
+    const intercepted = gs.aiPassTeam !== null && gs.aiPassTeam !== undefined &&
+      context.possessionTeam !== null && context.possessionTeam !== gs.aiPassTeam
+    const nearestTeammate = gs.aiPassTeam === null || gs.aiPassTeam === undefined
+      ? null
+      : context.nearestByTeam[gs.aiPassTeam]
+    const redirected = receiver && nearestTeammate &&
+      nearestTeammate.id !== receiver.id &&
+      context.possessionTeam === gs.aiPassTeam &&
+      Math.hypot(gs.ball.vx, gs.ball.vy) < 180 &&
+      vdist(nearestTeammate.x, nearestTeammate.y, gs.ball.x, gs.ball.y) <= PR + BR + 28
+    if (gs.aiPassTimer === 0 || received || intercepted || redirected) {
+      gs.aiPassTimer = 0
+      gs.aiPassReceiverId = null
+      gs.aiPassTeam = null
     }
   }
+  const assignments = coordinateTeam(gs, strategyContext, settings)
+  const primaryChasers = findPrimaryChasers(gs, settings, playerTeam)
+
+  for (const piece of gs.pieces) {
+    const difficulty = getPieceDifficulty(settings, piece.team, playerTeam)
+    const profile = AI_DIFFICULTY[difficulty]
+    piece.isPrimaryChaser = primaryChasers.has(piece.id)
+    if (piece.isPlayerControlled) {
+      delete gs.aiDecisionStates[piece.id]
+      continue
+    }
+
+    let decision = gs.aiDecisionStates[piece.id]
+    if (!decision) {
+      decision = {
+        decisionTimer: 0,
+        targetX: piece.x,
+        targetY: piece.y,
+        targetIntent: "formation",
+        action: "HOLD",
+        pendingAction: "HOLD",
+        pendingX: piece.x,
+        pendingY: piece.y,
+        reactionTimer: 0,
+        kickTargetX: opponentGoalX(piece.team),
+        kickTargetY: VH / 2,
+        kickCooldown: 0,
+        kickIntentTimer: 0,
+        targetLockTimer: 0,
+      }
+      gs.aiDecisionStates[piece.id] = decision
+    }
+
+    const decisionInterval = difficulty === "hard" ? 0.045 : 0.1
+    decision.decisionTimer -= dt
+    decision.reactionTimer = Math.max(0, decision.reactionTimer - dt)
+    decision.kickCooldown = Math.max(0, decision.kickCooldown - dt)
+    decision.kickIntentTimer = Math.max(0, decision.kickIntentTimer - dt)
+    decision.targetLockTimer = Math.max(0, decision.targetLockTimer - dt)
+    const shouldDecide = decision.decisionTimer <= 0
+    if (shouldDecide) decision.decisionTimer += decisionInterval
+
+    const ownGoalDistance = (gs.ball.x - ownGoalX(piece.team)) * side(piece.team)
+    const isDefender = piece.role === "ZAG" || piece.role === "LAT" || piece.role === "VOL"
+    const clearingOwnArea = piece.isPrimaryChaser && isDefender && ownGoalDistance >= 0 && ownGoalDistance < profile.clearanceRadius
+    const goalkeeper = piece.role === "GOL"
+
+    if (shouldDecide) {
+      const formation = formationTarget(piece, gs, context)
+      const goalkeeperHasBall = goalkeeper &&
+        vdist(piece.x, piece.y, gs.ball.x, gs.ball.y) <= 150
+      let selected = goalkeeper && !goalkeeperHasBall && assignments[piece.id] !== "RECEIVE"
+        ? {
+            action: "HOLD" as const,
+            target: goalkeeperTarget(piece, gs),
+          }
+        : chooseAction(
+            piece,
+            gs,
+            strategyContext,
+            settings,
+            formation,
+            assignments[piece.id],
+          )
+      const preparingKick =
+        (!goalkeeper || goalkeeperHasBall) &&
+        decision.kickIntentTimer > 0 &&
+        (decision.action === "PASS" || decision.action === "SHOOT") &&
+        vdist(piece.x, piece.y, gs.ball.x, gs.ball.y) < 210
+      if (preparingKick) {
+        selected = {
+          action: decision.action as "PASS" | "SHOOT",
+          score: 0,
+          target: getKickApproachTarget(
+            gs,
+            decision.kickTargetX,
+            decision.kickTargetY,
+          ),
+        }
+      }
+      let target = { ...selected.target }
+      if (piece.isPrimaryChaser && clearingOwnArea && selected.action === "PRESS") {
+        target = defensiveClearanceTarget(piece, gs)
+      }
+      if (["RUN", "OUTLET", "WIDE", "COVER", "SUPPORT"].includes(selected.action)) {
+        target = avoidTeammateCrowding(piece, gs, target)
+      }
+      const preciseKickApproach = selected.action === "PASS" || selected.action === "SHOOT"
+      if (
+        !goalkeeper &&
+        !preciseKickApproach &&
+        selected.action !== "PRESS" &&
+        selected.action !== "INTERCEPT"
+      ) {
+        target = {
+          ...target,
+          x: target.x + (formation.x - target.x) * profile.formationDiscipline,
+          y: target.y + (formation.y - target.y) * profile.formationDiscipline,
+        }
+      }
+      const committedMovement = ["RUN", "OUTLET", "WIDE", "COVER", "SUPPORT"].includes(selected.action)
+      if (selected.action === decision.action && committedMovement) {
+        const targetDrift = vdist(target.x, target.y, decision.targetX, decision.targetY)
+        if (decision.targetLockTimer > 0 && targetDrift < 180) {
+          target = { ...target, x: decision.targetX, y: decision.targetY }
+        } else {
+          decision.targetLockTimer = selected.action === "RUN" ? 0.42 : selected.action === "WIDE" ? 0.52 : 0.32
+        }
+      }
+      if (target.aimX !== undefined && target.aimY !== undefined && !preparingKick) {
+        decision.kickTargetX = target.aimX
+        decision.kickTargetY = target.aimY
+        decision.kickReceiverId = "receiverId" in target
+          ? target.receiverId ?? null
+          : null
+        if (selected.action === "PASS" || selected.action === "SHOOT") {
+          decision.kickIntentTimer = 0.55
+        }
+      }
+
+      const immediateAction = selected.action === "PASS" || selected.action === "SHOOT"
+      if (selected.action === decision.action || immediateAction) {
+        decision.action = selected.action
+        decision.pendingAction = selected.action
+        decision.reactionTimer = 0
+        decision.targetX = target.x
+        decision.targetY = target.y
+        decision.targetIntent = target.intent
+      } else {
+        if (decision.pendingAction !== selected.action) {
+          decision.pendingAction = selected.action
+          decision.pendingX = target.x
+          decision.pendingY = target.y
+          decision.reactionTimer = profile.reactionDelay
+        } else {
+          decision.pendingX = target.x
+          decision.pendingY = target.y
+        }
+        if (decision.reactionTimer <= 0) {
+          decision.action = selected.action
+          decision.targetX = decision.pendingX
+          decision.targetY = decision.pendingY
+          decision.targetIntent = target.intent
+          decision.targetLockTimer = selected.action === "RUN" ? 0.42 : selected.action === "WIDE" ? 0.52 : committedMovement ? 0.32 : 0
+        }
+      }
+    }
+
+    const kickApproach = decision.action === "PASS" || decision.action === "SHOOT"
+    const aggressive = piece.isPrimaryChaser || decision.action === "PRESS" || decision.action === "INTERCEPT" || decision.action === "RUN" || decision.action === "OUTLET" || decision.action === "WIDE" || decision.action === "RECEIVE" || kickApproach || decision.targetIntent === "ball" || decision.targetIntent === "drive" || decision.targetIntent === "goal"
+    const speedAttr = settings.attrs[piece.type].speed
+    const maxSpeed = getAiMaxSpeed(piece, aggressive, speedAttr) *
+      (difficulty === "hard" ? 1.22 : difficulty === "medium" ? 1.08 : 1)
+    const escape = getMotionWatch(piece, gs, dt)
+    const escapeWeight = escape ? 0.7 : 0
+    const targetX = decision.targetX * (1 - escapeWeight) + (piece.x + (escape?.x ?? 0) * 100) * escapeWeight
+    const targetY = decision.targetY * (1 - escapeWeight) + (piece.y + (escape?.y ?? 0) * 100) * escapeWeight
+    const acceleration = (aggressive ? 13 + speedAttr / 14 : 7.2 + speedAttr / 25) * (goalkeeper ? 1.5 : 1)
+    steerToTarget(piece, {
+      targetX,
+      targetY,
+      maxSpeed,
+      acceleration,
+      dt,
+      pieces: gs.pieces,
+      separationStrength: kickApproach
+        ? profile.separationStrength * 0.18
+        : profile.separationStrength,
+    })
+  }
+}
+
+export function getTacticalAiKickIntents(gs: GS) {
+  return gs.pieces.flatMap((piece) => {
+    const decision = gs.aiDecisionStates[piece.id]
+    if (
+      !decision ||
+      piece.isPlayerControlled ||
+      vdist(piece.x, piece.y, gs.ball.x, gs.ball.y) > PR + BR + 10
+    ) return []
+    if (decision.action !== "PASS" && decision.action !== "SHOOT") return []
+    if (decision.kickCooldown > 0) return []
+    return [{
+      piece,
+      action: decision.action,
+      x: decision.kickTargetX,
+      y: decision.kickTargetY,
+      receiverId: decision.kickReceiverId ?? null,
+    }]
+  })
 }
 
 export function selectClosestPlayerToBall(gs: GS, team: Team = "A") {

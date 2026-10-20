@@ -1,41 +1,42 @@
-# figma-make-app
+# NEON FC — Agent Instructions
 
-React + Vite + Tailwind CSS project running inside Figma Make.
+React + Vite + TypeScript project. Game logic runs entirely in Canvas 2D; React handles only menus and HUD.
 
 ## Development Server
 
-A Vite development server is **already running** on `$PORT` (default 8443). You don't need to start it manually.
-
-- Preview URL: The user can access the running app through the preview panel
-- Hot reload: Changes to source files are reflected immediately
+Run `pnpm dev` to start Vite on port 5173. Hot reload is active for all source files.
 
 ## Project Structure
 
-This is the canonical project structure. Start with task-relevant files below. Only follow imports or inspect other files when required, when a documented path is missing, or when the repository contradicts this guide.
+- `src/engine/simulation.ts` — main game loop step, kickoff, goals, particles
+- `src/engine/ai.ts` — opponent AI per role
+- `src/engine/physics.ts` — SAT collision, polygon movement
+- `src/engine/state.ts` — `makeGS()` builds the initial match state
+- `src/hooks/useMatch.ts` — RAF loop, integrates engine with React
+- `src/hooks/useMatchInput.ts` — keyboard and touch input
+- `src/components/match/` — canvas render and HUD overlay
+- `src/components/screens/` — game screens (menu, roster, match)
+- `src/utils/tactics.ts` — formations, home/away canvas coordinates
+- `src/utils/audio.ts` — SFX and music via Howler
+- `src/constants/physics.ts` — field dimensions (VW, VH), fixed timestep
+- `src/constants/settings.ts` — default settings, neon palette, controls
+- `src/types/` — TypeScript domain types (GS, Piece, Team, etc.)
+- `electron/main.cjs` — Electron main process (desktop only)
 
-- `src/main.tsx` - React entrypoint; imports `src/index.css` and mounts `src/App.tsx` into the `#root` element
-- `src/App.tsx` - Primary application component and the usual starting point for UI work
-- `src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
-- `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
-- `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
-- `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
-- `.mise.toml` - Toolchain versions for Node.js and pnpm
+## Field Dimensions
 
-## Dependencies
+`VW = 1250`, `VH = 580` (pixels, arena with walls). These are imported as constants throughout the engine — treat them as the single source of truth for field size.
 
-- Runtime: React 19 and React DOM 19
-- Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
-- Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
-- Formatting: oxfmt
+## Code Style
 
-## Styling
+- Double quotes for strings with apostrophes
+- Export components as default exports
+- Engine files use plain functions, no classes
+- All domain types in `src/types/`; avoid inline type definitions in engine files
 
-This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin configured in `vite.config.ts`. `src/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in `src/index.css`. This scaffold does not need a Tailwind config file or PostCSS config.
+## Commands
 
-`src/main.tsx` imports `src/index.css`, so global font wiring belongs in `src/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
-
-## Code quality
-
-- Use double quotes for strings containing apostrophes (`"We're here to help"`), or escape them in single-quoted strings. An unescaped apostrophe in a single-quoted string breaks the build.
-- Ensure JSX tags are closed and braces are balanced.
-- Export components as default exports.
+```bash
+pnpm typecheck     # run before any commit
+pnpm build         # verify the build passes
+```

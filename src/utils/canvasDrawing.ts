@@ -106,6 +106,8 @@ export function cPiece(
   teamAColor: string,
 
   teamBColor: string,
+
+  kickFlash = false,
 ) {
   const gz = glowLevel === "low" ? 5 : glowLevel === "high" ? 18 : 10
 
@@ -116,11 +118,15 @@ export function cPiece(
   ctx.translate(cx, cy)
   ctx.rotate(baseAngle)
 
-  ctx.shadowColor = color
-  ctx.shadowBlur = selected ? gz * 1.8 : gz
-  ctx.fillStyle = color + "22"
-  ctx.strokeStyle = color
-  ctx.lineWidth = selected ? 2.5 : 1.8
+  // Kick flash: bright white glow burst for ~120ms
+  const effectiveColor = kickFlash ? "#ffffff" : color
+  const effectiveGlow = kickFlash ? gz * 4 : (selected ? gz * 1.8 : gz)
+
+  ctx.shadowColor = effectiveColor
+  ctx.shadowBlur = effectiveGlow
+  ctx.fillStyle = kickFlash ? color + "88" : color + "22"
+  ctx.strokeStyle = effectiveColor
+  ctx.lineWidth = (selected || kickFlash) ? 2.5 : 1.8
 
   cShape(ctx, p.type, 0, 0, r)
 

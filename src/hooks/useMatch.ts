@@ -145,7 +145,7 @@ export function useMatch(
   }, [keysRef, matchMode, playerSlots, publishHud])
 
   useEffect(() => {
-    setStadiumMode(false)
+    setStadiumMode(matchMode === "normal")
     return () => setStadiumMode(false)
   }, [matchMode])
 
@@ -225,7 +225,6 @@ export function useMatch(
   }
 
   function restartGame() {
-    setStadiumMode(false)
     gsRef.current = makeGS(playerSlotsRef.current, undefined, matchMode, true)
     keysRef.current.clear()
     publishHud(true)

@@ -32,6 +32,7 @@ const translations = {
     rotateRight: "GIRAR PARA A DIREITA",
     selectNearest: "SELECIONAR PEÇA MAIS PRÓXIMA",
     pause: "PAUSAR / CONTINUAR",
+    kick: "CHUTAR",
     pressKey: "PRESSIONE UMA TECLA",
     resetControls: "RESTAURAR PADRÕES",
     duplicateKey: "Essa tecla já está atribuída a outra ação.",
@@ -72,6 +73,7 @@ const translations = {
     rotateRight: "ROTATE RIGHT",
     selectNearest: "SELECT NEAREST PLAYER",
     pause: "PAUSE / RESUME",
+    kick: "KICK",
     pressKey: "PRESS A KEY",
     resetControls: "RESTORE DEFAULTS",
     duplicateKey: "This key is already assigned to another action.",
@@ -170,6 +172,7 @@ export default function SettingsScreen({
     { action: "rotateRight", label: t.rotateRight },
     { action: "selectNearest", label: t.selectNearest },
     { action: "pause", label: t.pause },
+    { action: "kick", label: t.kick },
   ]
 
   const captureControlKey = (
@@ -422,20 +425,40 @@ export default function SettingsScreen({
                   return (
                     <label
                       key={track.src}
-                      className="flex cursor-pointer items-center gap-3 bg-[#0a070d] px-4 py-3 transition-colors hover:bg-[#ff007f]/10"
+                      className={`group flex cursor-pointer items-center gap-3 bg-[#0a070d] px-4 py-3 transition-colors hover:bg-[#ff007f]/10 ${
+                        enabled ? "text-white" : "text-white/55"
+                      }`}
                     >
                       <input
                         type="checkbox"
                         checked={enabled}
                         onChange={() => toggleMusicTrack(track.src)}
-                        className="h-4 w-4 accent-[#ff007f]"
+                        className="peer sr-only"
                       />
-                      <span className="min-w-0 flex-1 truncate text-xs text-white/85">
+                      <span
+                        aria-hidden="true"
+                        className={`relative h-5 w-9 shrink-0 rounded-full border transition-all ${
+                          enabled
+                            ? "border-[#ff4ca0]/80 bg-[#ff007f]/25 shadow-[0_0_10px_rgba(255,0,127,0.35)]"
+                            : "border-white/20 bg-white/5"
+                        } peer-focus-visible:ring-2 peer-focus-visible:ring-[#ff4ca0] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#0a070d]`}
+                      >
+                        <span
+                          className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all ${
+                            enabled
+                              ? "left-[18px] bg-[#ff4ca0] shadow-[0_0_8px_#ff007f]"
+                              : "left-0.5 bg-white/45"
+                          }`}
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-xs transition-colors group-hover:text-white">
                         {track.title}
                       </span>
                       <span
                         className={`text-[9px] font-bold tracking-widest ${
-                          enabled ? "text-[#ff4ca0]" : "text-white/35"
+                          enabled
+                            ? "rounded-full border border-[#ff4ca0]/30 bg-[#ff007f]/10 px-2 py-0.5 text-[#ff4ca0]"
+                            : "text-white/35"
                         }`}
                       >
                         {enabled ? "ON" : "OFF"}

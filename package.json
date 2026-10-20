@@ -1,12 +1,13 @@
 {
-  "name": "figma-make-app",
+  "name": "neon-fc",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "build:desktop": "vite build --base=./ && electron-builder --win nsis && electron-builder --win portable",
+    "build:desktop": "vite build --base=./ && electron-builder --win nsis portable",
+    "typecheck": "tsc --noEmit",
     "desktop:run": "vite build --base=./ && electron .",
     "preview": "vite preview",
     "format": "oxfmt"

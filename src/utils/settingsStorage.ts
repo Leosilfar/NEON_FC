@@ -74,6 +74,10 @@ export function loadSettings(): GameSettings {
             typeof parsedControls.pause === "string"
               ? parsedControls.pause
               : DEFAULT_GAME_CONTROLS.pause,
+          kick:
+            typeof parsedControls.kick === "string"
+              ? parsedControls.kick
+              : DEFAULT_GAME_CONTROLS.kick,
         },
 
         fieldSurfaceColor:

@@ -5,6 +5,7 @@ import {
   homeToCanvas,
   awayToCanvas,
 } from "@/utils/tactics"
+import { createSeed, roll } from "@/engine/rng"
 
 const CENTER_CIRCLE_RADIUS = VW * 0.15
 const RANDOM_AWAY_PIECES: PieceType[] = [
@@ -22,29 +23,29 @@ interface MutablePoint {
   y: number
 }
 
-function randomItem<T>(items: T[]): T {
-  return items[Math.floor(Math.random() * items.length)]
+// rng-seeded helpers — require a mutable rng carrier object
+function randomItem<T>(items: T[], r: { rngState: number }): T {
+  return items[Math.floor(roll(r) * items.length)]
 }
 
-function shuffle<T>(items: T[]): T[] {
+function shuffle<T>(items: T[], r: { rngState: number }): T[] {
   const next = [...items]
   for (let i = next.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = Math.floor(roll(r) * (i + 1))
     ;[next[i], next[j]] = [next[j], next[i]]
   }
   return next
 }
 
-function createRandomAwayFormation(): SlotPiece[] {
-  const roles = shuffle([
-    "GOL" as Role,
-    ...Array.from({ length: 4 }, () => randomItem(RANDOM_AWAY_ROLES)),
-  ])
-
+function createRandomAwayFormation(r: { rngState: number }): SlotPiece[] {
+  const roles = shuffle(
+    ["GOL" as Role, ...Array.from({ length: 4 }, () => randomItem(RANDOM_AWAY_ROLES, r))],
+    r,
+  )
   return roles.map((role, i) => ({
     id: 101 + i,
     role,
-    type: randomItem(RANDOM_AWAY_PIECES),
+    type: randomItem(RANDOM_AWAY_PIECES, r),
   }))
 }
 
@@ -87,7 +88,13 @@ export function makeGS(
   awayFormation?: SlotPiece[],
   matchMode: MatchMode = "normal",
   randomizeAway = false,
+  seed?: number,
 ): GS {
+  // Initialise RNG first — used by shuffle/randomItem below
+  const rngState = createSeed(seed)
+  // Carrier object mutated by roll() — shares the seed so formation randomisation
+  // is part of the same reproducible sequence as in-match randomness.
+  const r = { rngState }
   const binHome = homeFormation.map((s) => s?.role)
   const homeNorm = computeHomeNormalized(binHome)
 
@@ -121,7 +128,7 @@ export function makeGS(
     awayFormation && awayFormation.length
       ? awayFormation
       : randomizeAway
-        ? createRandomAwayFormation()
+        ? createRandomAwayFormation(r)
         : undefined
 
   if (resolvedAwayFormation) {
@@ -224,5 +231,15 @@ export function makeGS(
     stuckBallDuration: 0,
     pieceMotionWatch: {},
     aiDecisionStates: {},
+    aiKickFlashUntil: {},
+    aiKickCount: 0,
+    aiPassCount: 0,
+    aiShotCount: 0,
+    aiPossessionTeam: null,
+    aiPossessionCandidateTime: 0,
+    aiPossessionCandidate: null,
+    kickCooldown: 0,
+    kickFlashUntil: 0,
+    rngState: r.rngState,
   }
 }

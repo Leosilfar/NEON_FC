@@ -31,6 +31,7 @@ export interface GameControls {
   rotateRight: string
   selectNearest: string
   pause: string
+  kick: string
 }
 
 export interface GameSettings {

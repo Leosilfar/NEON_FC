@@ -86,7 +86,7 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
       </nav>
 
       {/* Main layout */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-4 overflow-y-auto lg:grid-cols-12 lg:gap-6 w-full max-w-7xl mx-auto px-4 mt-3 animate-smooth-neon">
+      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-4 overflow-y-auto lg:grid-cols-12 lg:gap-6 w-full max-w-7xl mx-auto px-4 mt-3 pb-4 animate-smooth-neon">
         {activeTab === "appearance" ? (
           <>
             {/* Left – Appearance controls (7 cols) */}

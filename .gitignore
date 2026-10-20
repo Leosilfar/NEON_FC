@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.dist/
 release/
 build/
 .cache/
@@ -10,12 +11,16 @@ vite.config.*.timestamp-*
 *-debug.log*
 logs/
 *.log
-.claude-replay.*
-.tmp-*
 
-# Platform-managed agentplat state, not project source. In the
-# client-initiated single-repo workspace layout (make's `Path: "."` spec) the
-# repo root IS the workspace root, so these land inside this repo rather than
-# beside it.
+# pnpm store cache — never committed
+.pnpm-store/
+
+# Electron build outputs
+*.exe
+*.blockmap
+*.7z
+*.nsis.7z
+
+# Platform-managed agent state
 /.plugins/
 /.opencode-skills/

@@ -1,7 +1,9 @@
-# Music credits
+# Créditos de áudio
 
-The soundtrack tracks listed below were created by the project owner with
-Google Gemini Lyria 3.
+## Trilha sonora
+
+As faixas abaixo foram geradas pelo autor do projeto com o Google Gemini
+(Lyria 3). Crédito de geração: **Google Gemini / Lyria 3**.
 
 - Cachorrão
 - CHASING
@@ -17,15 +19,17 @@ Google Gemini Lyria 3.
 - procrastiNATION
 - Shouldn't be here
 
-The game starts the playlist after the first user interaction on the splash
-screen. Tracks are shuffled and played once each before the playlist reshuffles.
-When a track starts, its filename is shown in the now-playing card for five
-seconds. Playlist files are stored in `public/music`; keep the track list in
-`src/utils/soundtrack.ts` in sync when adding or removing music.
+O jogo inicia a playlist após a primeira interação do usuário na tela inicial.
+As faixas são embaralhadas e cada uma toca uma vez antes de a playlist ser
+embaralhada novamente. Quando uma faixa começa, seu nome aparece no indicador
+"Tocando agora" por cinco segundos. Os arquivos ficam em `public/music`;
+atualize a lista em `src/utils/soundtrack.ts` ao adicionar ou remover faixas.
 
-The match stadium ambience is "Arrowhead Stadium crowd noise" by Kj1595,
-from Wikimedia Commons:
+## Ambiência de estádio
+
+"Arrowhead Stadium crowd noise", por Kj1595, via Wikimedia Commons:
 https://commons.wikimedia.org/wiki/File:Arrowhead_Stadium_crowd_noise.wav
-It is distributed under CC BY-SA 4.0:
+Licença CC BY-SA 4.0:
 https://creativecommons.org/licenses/by-sa/4.0/
-The audio is included unmodified at `public/audio/arrowhead-stadium-crowd.wav`.
+O áudio está incluído sem modificações em
+`public/audio/arrowhead-stadium-crowd.wav`.

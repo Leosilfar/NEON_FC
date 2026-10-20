@@ -234,7 +234,7 @@ export default function MatchCanvas({
           letterSpacing: "0.12em",
         }}
       >
-        TAB=trocar · WASD/↑←↓→=mover · Q/E=girar · ESC=pause
+              TAB=trocar · WASD/↑←↓→=mover · Q/E=girar · F3=IA · ESC=pause
       </span>
       {notification && (
         <div

@@ -370,6 +370,73 @@ export function piecePieceHit(
   }
 }
 
+/**
+ * Find the outward normal of the piece edge (or direction for circles) that is
+ * closest to the ball, to use as the kick direction.
+ *
+ * For polygons: iterates each edge, finds the closest point on each edge to
+ * the ball, and returns the normal of the nearest edge pointing toward the ball.
+ * For circles: normal is the vector from piece centre to ball.
+ *
+ * Returns a unit vector {nx, ny} pointing from piece toward ball, and
+ * `dist` — the distance from the ball to the closest point on that edge.
+ */
+export function getPieceKickNormal(
+  p: GPiece,
+  bx: number,
+  by: number,
+): { nx: number; ny: number; dist: number } | null {
+  if (p.type === "circle") {
+    const dx = bx - p.x
+    const dy = by - p.y
+    const d = Math.hypot(dx, dy)
+    if (d < 0.001) return { nx: 1, ny: 0, dist: 0 }
+    return { nx: dx / d, ny: dy / d, dist: d }
+  }
+
+  const verts = getPieceWorldVerts(p)
+  if (!verts.length) return null
+
+  let bestDist = Infinity
+  let bestNx = 1
+  let bestNy = 0
+
+  const n = verts.length
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = verts[i]
+    const [bvx, bvy] = verts[(i + 1) % n]
+
+    // Edge vector
+    const ex = bvx - ax
+    const ey = bvy - ay
+    const edgeLen2 = ex * ex + ey * ey
+    if (edgeLen2 < 0.001) continue
+
+    // Project ball onto segment, clamped
+    const t = Math.max(0, Math.min(1, ((bx - ax) * ex + (by - ay) * ey) / edgeLen2))
+    const closestX = ax + t * ex
+    const closestY = ay + t * ey
+
+    const dx = bx - closestX
+    const dy = by - closestY
+    const dist = Math.hypot(dx, dy)
+
+    if (dist < bestDist) {
+      bestDist = dist
+      // Outward edge normal (perpendicular to edge direction)
+      const edgeLen = Math.sqrt(edgeLen2)
+      const rawNx = -ey / edgeLen
+      const rawNy = ex / edgeLen
+      // Orient to point from piece toward ball
+      const dot = rawNx * dx + rawNy * dy
+      bestNx = dot >= 0 ? rawNx : -rawNx
+      bestNy = dot >= 0 ? rawNy : -rawNy
+    }
+  }
+
+  return { nx: bestNx, ny: bestNy, dist: bestDist }
+}
+
 export function pieceAabb(p: GPiece) {
   return pieceWorldBounds(p)
 }

@@ -1,6 +1,0 @@
-export { default as TeamATab } from "./TeamATab"
-export { default as SplashScreen } from "./SplashScreen"
-export { default as MainScreen } from "./MainScreen"
-export { default as EditScreen } from "./EditScreen"
-export { default as StatsScreen } from "./StatsScreen"
-export { default as SettingsScreen } from "./SettingsScreen"

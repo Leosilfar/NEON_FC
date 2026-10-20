@@ -198,6 +198,41 @@ export interface GS {
   pieceMotionWatch: Record<number, PieceMotionWatch>
 
   aiDecisionStates: Record<number, AiDecisionState>
+
+  aiDebugEnabled?: boolean
+
+  aiPassReceiverId?: number | null
+
+  aiPassTeam?: Team | null
+
+  aiPassTimer?: number
+
+  aiKickFlashUntil: Record<number, number>
+
+  aiKickCount: number
+
+  aiPassCount: number
+
+  aiShotCount: number
+
+  aiPossessionTeam: Team | null
+
+  aiPossessionCandidateTime: number
+
+  aiPossessionCandidate: Team | null
+
+  /** Cooldown in seconds before the player can kick again (prevents spam). */
+  kickCooldown: number
+
+  /** timestamp until which the kicked piece shows a flash highlight. */
+  kickFlashUntil: number
+
+  /**
+   * Seeded RNG state for the match engine (Mulberry32 uint32).
+   * Mutated in place by roll(gs) from src/engine/rng.ts.
+   * Never use Math.random() inside the engine — use roll(gs) instead.
+   */
+  rngState: number
 }
 
 export interface HudSnap {
@@ -243,11 +278,47 @@ export interface PieceMotionWatch {
 }
 
 export interface AiDecisionState {
-  cooldown: number
+  decisionTimer: number
 
-  mistakeTime: number
+  targetX: number
 
-  mistakeX: number
+  targetY: number
 
-  mistakeY: number
+  targetIntent: "formation" | "ball" | "drive" | "goal"
+
+  action: AiAction
+
+  pendingAction: AiAction
+
+  pendingX: number
+
+  pendingY: number
+
+  reactionTimer: number
+
+  kickTargetX: number
+
+  kickTargetY: number
+
+  kickCooldown: number
+
+  kickIntentTimer: number
+
+  targetLockTimer: number
+
+  kickReceiverId?: number | null
 }
+
+export type AiAction =
+  | "PRESS"
+  | "INTERCEPT"
+  | "COVER"
+  | "SUPPORT"
+  | "HOLD"
+  | "ATTACK"
+  | "RUN"
+  | "OUTLET"
+  | "WIDE"
+  | "RECEIVE"
+  | "PASS"
+  | "SHOOT"
