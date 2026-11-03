@@ -1,8 +1,8 @@
-import { useContext, useState, useEffect } from "react"
-import { GameContext } from "@/context/GameContext"
+import { useState, useEffect } from "react"
 import type { GameSettings, LogoId } from "@/types"
 import { ColorPicker } from "@/components/common"
 import { LogoSVG } from "@/components/common/LogoSVG"
+import { translations } from "./settings/translations"
 
 export default function TeamATab({
   settings,
@@ -16,6 +16,7 @@ export default function TeamATab({
   const [name, setName] = useState<string>(team.name)
   const [color, setColor] = useState<string>(team.color)
   const [logo, setLogo] = useState<LogoId>(team.logo)
+  const t = translations[settings.language?.startsWith("pt") ? "PT" : "EN"]
 
   // Sync when active team changes
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function TeamATab({
               : "bg-black/60 text-cyan-400 px-4 py-2 rounded-full"
           }
         >
-          TIME A
+          {t.teamA}
         </button>
         <button
           onClick={() => setActiveTeam("B")}
@@ -73,13 +74,13 @@ export default function TeamATab({
               : "bg-black/60 text-cyan-400 px-4 py-2 rounded-full"
           }
         >
-          TIME B
+          {t.teamB}
         </button>
       </div>
 
       {/* Editing fields */}
       <h3 className="text-cyan-400 font-bold tracking-widest text-sm mb-3">
-        NOME DO TIME
+        {t.teamName}
       </h3>
       <input
         type="text"
@@ -92,7 +93,7 @@ export default function TeamATab({
         placeholder="Digite o nome do time"
       />
       <h3 className="text-cyan-400 font-bold tracking-widest text-sm mb-3">
-        COR DO TIME
+        {t.teamColor}
       </h3>
       <ColorPicker
         value={color}
@@ -102,7 +103,7 @@ export default function TeamATab({
         }}
       />
       <h3 className="text-cyan-400 font-bold tracking-widest text-sm mb-3">
-        EMBLEMA
+        {t.emblem}
       </h3>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
         {LOGO_OPTIONS.map((opt) => (

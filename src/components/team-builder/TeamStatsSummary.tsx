@@ -4,10 +4,18 @@ export default function TeamStatsSummary({
   accentColor,
 
   avg,
+
+  statsTitle,
+
+  teamSubtitle,
 }: {
   accentColor: string
 
   avg: (k: keyof PieceAttrs) => number
+
+  statsTitle: string
+
+  teamSubtitle: string
 }) {
   const bars: {
     key: keyof PieceAttrs
@@ -74,7 +82,7 @@ export default function TeamStatsSummary({
             color: `${accentColor}88`,
           }}
         >
-          ESTATÍSTICAS
+          {statsTitle}
         </div>
         <div
           style={{
@@ -87,7 +95,7 @@ export default function TeamStatsSummary({
             letterSpacing: "0.14em",
           }}
         >
-          DO TIME
+          {teamSubtitle}
         </div>
       </div>
 

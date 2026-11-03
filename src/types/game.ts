@@ -8,13 +8,25 @@ export type Screen = "SPLASH" | "MAIN" | "SETTINGS" | "EDITAR" | "ELENCO" | "STA
 
 export type Role = "GOL" | "ZAG" | "LAT" | "VOL" | "MEI" | "ATA"
 
-export type MatchSound = "match-start" | "goal" | "ball-piece" | "piece-piece" | "wall" | "goal-line" | "whistle" | "lights-on"
+export type MatchSound = "match-start" | "match-end" | "goal" | "ball-piece" | "piece-piece" | "wall" | "goal-line" | "whistle" | "lights-on"
+
+export type MatchEndPhase = "return" | "blackout" | null
 
 export type KickoffPhase = "intro" | "regroup" | null
+
+export interface CameraView {
+  x: number
+  y: number
+  scale: number
+}
 
 export interface KickoffTarget {
   x: number
   y: number
+}
+
+export interface PieceHomePosition extends KickoffTarget {
+  rot: number
 }
 
 export interface KickoffRecoveryState {
@@ -139,6 +151,14 @@ export interface GS {
 
   finished: boolean
 
+  endingPhase: MatchEndPhase
+
+  endingProgress: number
+
+  endingElapsed: number
+
+  homePositions: Record<number, PieceHomePosition>
+
   timeLeft: number
 
   notification: string | null
@@ -199,6 +219,10 @@ export interface GS {
 
   aiDecisionStates: Record<number, AiDecisionState>
 
+  aiDecisionElapsed: number
+
+  aiSpinDirections: Record<number, number>
+
   aiDebugEnabled?: boolean
 
   aiPassReceiverId?: number | null
@@ -249,6 +273,10 @@ export interface HudSnap {
   paused: boolean
 
   finished: boolean
+
+  endingPhase: MatchEndPhase
+
+  endingProgress: number
 
   selectedId: number | null
 

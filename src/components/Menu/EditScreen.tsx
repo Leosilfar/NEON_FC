@@ -1,17 +1,18 @@
 import { useContext, useState, useEffect } from "react"
 import { GameContext } from "@/context/GameContext"
-import type { GameSettings, PieceType, LogoId, BgPreset } from "@/types"
+import type { GameSettings, PieceType, BgPreset } from "@/types"
 import AppearanceTab from "@/components/common/AppearanceTab"
 import FieldTab from "@/components/common/FieldTab"
 import TeamATab from "./TeamATab"
 import PiecesTab from "@/components/common/PiecesTab"
-import { LogoSVG } from "@/components/common/LogoSVG"
 import { PieceSVG } from "@/components/common/PieceSVG"
 import { BG_PRESETS } from "@/constants"
+import { translations } from "./settings/translations"
 
 // Exported component name aligns with user reference
 export default function EditMenu({ onBack }: { onBack: () => void }) {
   const { settings, updateSettings } = useContext(GameContext)!
+  const t = translations[settings.language?.startsWith("pt") ? "PT" : "EN"]
 
   // Local draft state for all edits
   const [draft, setDraft] = useState<GameSettings>(() => ({ ...settings }))
@@ -39,9 +40,9 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
 
   // Tab definitions (three tabs)
   const tabs = [
-    { key: "appearance" as const, label: "APARÊNCIA" },
-    { key: "teamA" as const, label: "TIMES do treino" },
-    { key: "pieces" as const, label: "PEÇAS" },
+    { key: "appearance" as const, label: t.appearance },
+    { key: "teamA" as const, label: t.trainingTeams },
+    { key: "pieces" as const, label: t.pieces },
   ]
 
   return (
@@ -51,19 +52,19 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
     >
       {/* Header */}
       <header className="flex items-center justify-between bg-[#00f0ff] text-black font-extrabold px-8 py-4 rounded-3xl mx-4 mt-4">
-        <h2 className="text-xl">EDITAR E PERSONALIZAR</h2>
+        <h2 className="text-xl">{t.editTitle}</h2>
         <div className="flex gap-2">
           <button
             onClick={onBack}
             className="bg-[#ff007f] text-white px-6 py-2 rounded-full shadow-[0_0_15px_#ff007f] transition-all duration-200"
           >
-            VOLTAR
+            {t.voltar}
           </button>
           <button
             onClick={handleSave}
             className="bg-[#ff007f] text-white px-6 py-2 rounded-full shadow-[0_0_15px_#ff007f] transition-all duration-200"
           >
-            SALVAR
+            {t.save}
           </button>
         </div>
       </header>
@@ -151,7 +152,7 @@ export default function EditMenu({ onBack }: { onBack: () => void }) {
             {activeTab !== "teamA" && (
               <aside className="lg:col-span-4 bg-black/75 border border-cyan-400/30 rounded-2xl p-5 text-cyan-300 min-h-[260px] lg:h-full flex flex-col items-center justify-center shadow-[0_0_24px_rgba(0,240,255,0.12)] backdrop-blur-sm">
                 <h3 className="text-center font-bold tracking-widest mb-2">
-                  LIVE PREVIEW
+                  {t.livePreview}
                 </h3>
                 {activeTab === "pieces" && (
                   <div className="flex flex-col items-center gap-4">

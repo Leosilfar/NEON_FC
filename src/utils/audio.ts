@@ -47,6 +47,14 @@ const CUES: Record<SoundCue, Tone[]> = {
     { frequency: 784, duration: 0.32, waveform: "sine", volume: 0.3 },
   ],
 
+  "match-end": [
+    { frequency: 587, duration: 0.18, waveform: "sine", volume: 0.14 },
+
+    { frequency: 494, duration: 0.2, waveform: "sine", volume: 0.12 },
+
+    { frequency: 392, duration: 0.28, waveform: "triangle", volume: 0.1 },
+  ],
+
   goal: [
     { frequency: 523, duration: 0.14, waveform: "triangle", volume: 0.28 },
 

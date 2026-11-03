@@ -140,6 +140,15 @@ input[type="color"]::-webkit-color-swatch {
   0%, 100% { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 18px rgba(255,255,255,0.6)); }
   50%       { filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 30px rgba(255,255,255,0.9)); }
 }
+@keyframes logo-slow-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
+.animate-logo-slow-zoom {
+  animation: logo-slow-zoom 16s linear infinite alternate;
+  transform-origin: center;
+  will-change: transform;
+}
 @keyframes btn-pulse {
   0%, 100% { box-shadow: 0 0 18px rgba(0,245,255,0.18); }
   50%       { box-shadow: 0 0 30px rgba(0,245,255,0.38); }
@@ -276,6 +285,32 @@ input[type="color"]::-webkit-color-swatch {
 .animate-neon-on {
   animation: neonPowerOn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@keyframes menu-card-slide-in {
+  from {
+    opacity: 0;
+    translate: 80px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.menu-card-enter {
+  opacity: 0;
+  animation: menu-card-slide-in 650ms cubic-bezier(0.2, 0.78, 0.25, 1) forwards;
+  will-change: translate, opacity;
+}
+
+.menu-card-enter-0 { animation-delay: 80ms; }
+.menu-card-enter-1 { animation-delay: 160ms; }
+.menu-card-enter-2 { animation-delay: 240ms; }
+.menu-card-enter-3 { animation-delay: 320ms; }
+.menu-card-enter-4 { animation-delay: 400ms; }
+.menu-card-enter-5 { animation-delay: 480ms; }
+.menu-card-enter-6 { animation-delay: 560ms; }
+.menu-card-enter-7 { animation-delay: 640ms; }
 
 /* ── Blink animation for splash screen text ───────────────────── */
 @keyframes blink {

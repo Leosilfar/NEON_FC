@@ -1,8 +1,10 @@
 import { useContext } from "react"
 import { GameContext } from "@/context/GameContext"
+import { translations } from "./settings/translations"
 
 export default function StatsScreen({ onBack }: { onBack: () => void }) {
   const { settings } = useContext(GameContext)!
+  const t = translations[settings.language?.startsWith("pt") ? "PT" : "EN"]
 
   return (
     <div
@@ -32,21 +34,19 @@ export default function StatsScreen({ onBack }: { onBack: () => void }) {
         }}
       >
         <button onClick={onBack} style={backButtonStyle}>
-          ← VOLTAR
+          ← {t.voltar}
         </button>
         <div>
-          <h2 style={statsTitleStyle}>ESTATÍSTICAS</h2>
+          <h2 style={statsTitleStyle}>{t.stats}</h2>
         </div>
         {/* Placeholder for future stats button */}
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "2rem" }}>
         <div style={placeholderBoxStyle}>
-          <h3 style={placeholderTitleStyle}>Em Breve</h3>
+          <h3 style={placeholderTitleStyle}>{t.comingSoon}</h3>
           <p style={placeholderTextStyle}>
-            A tela de estatísticas está em desenvolvimento. Brevemente você
-            poderá acompanhar seus desempenho, histórico de partidas e muito
-            mais.
+            {t.statsDescription}
           </p>
         </div>
       </div>

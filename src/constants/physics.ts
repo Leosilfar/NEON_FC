@@ -1,16 +1,17 @@
 // Physics and display constants
 
-export const VW = 1250
+export const VW = 1800
 
-export const VH = 580
+export const VH = 900
+
+/** Tactical reach grows less than the field so the extra area remains meaningful. */
+export const TACTICAL_DISTANCE_SCALE = 1.3
 
 export const PR = 18 // piece radius
 
 export const BR = 9 // ball radius
 
-export const MOVE_SPD = 240
-
-export const BALL_FRIC = 0.975
+export const MOVE_SPD = 280
 
 export const GOAL_Y0 = VH * 0.38
 
@@ -42,7 +43,7 @@ export const BALL_MASS = 0.3
 
 export const SUBSTEPS = 6
 
-export const CORNER_RADIUS = 40
+export const CORNER_RADIUS = 52
 
 // Utility functions
 

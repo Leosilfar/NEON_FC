@@ -7,6 +7,7 @@ import { LogoSVG, PieceSVG } from "@/components/common"
 import TeamStatsSummary from "./TeamStatsSummary"
 
 import type { PieceAttrs } from "@/types"
+import { translations } from "@/components/Menu/settings/translations"
 
 export default function InventoryPanel({
   settings,
@@ -30,6 +31,7 @@ export default function InventoryPanel({
   onPick: (type: PieceType) => void
 }) {
   const ac = settings.accentColor
+  const t = translations[settings.language?.startsWith("pt") ? "PT" : "EN"]
 
   return (
     <div
@@ -252,7 +254,12 @@ export default function InventoryPanel({
         }}
       />
 
-      <TeamStatsSummary accentColor={ac} avg={avg} />
+      <TeamStatsSummary
+        accentColor={ac}
+        avg={avg}
+        statsTitle={t.teamStats}
+        teamSubtitle={t.teamSubtitle}
+      />
 
       <div
         style={{ marginTop: "auto", display: "flex", justifyContent: "center" }}

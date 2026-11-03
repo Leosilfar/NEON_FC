@@ -17,6 +17,7 @@ import { changeRoleKeepingOneGK, isTeamValid } from "@/utils/validators"
 import TacticalField from "./TacticalField"
 import InventoryPanel from "./InventoryPanel"
 import TeamStatsSummary from "./TeamStatsSummary"
+import { translations } from "@/components/Menu/settings/translations"
 
 export default function TeamBuilder({
   onBack,
@@ -26,6 +27,7 @@ export default function TeamBuilder({
   settings: GameSettings
 }) {
   const { playerSlots, updatePlayerSlots } = useContext(GameContext)!
+  const t = translations[settings.language?.startsWith("pt") ? "PT" : "EN"]
   const savedRoles = playerSlots.map((slot) => slot.role ?? "MEI")
   const savedFormation = FORMATION_PRESETS.find(
     (formation) => formation.roles?.join(",") === savedRoles.join(","),
@@ -161,11 +163,11 @@ export default function TeamBuilder({
             transition: "all 0.2s",
           }}
         >
-          ← VOLTAR
+          ← {t.voltar}
         </button>
 
         <div style={{ textAlign: "center", flex: 1 }}>
-          <div style={{ fontSize: 18, letterSpacing: "0.1em" }}>MEU ELENCO</div>
+          <div style={{ fontSize: 18, letterSpacing: "0.1em" }}>{t.myRoster}</div>
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -175,7 +177,7 @@ export default function TeamBuilder({
               opacity: 0.7,
             }}
           >
-            FASE 01 · MONTAGEM
+            {t.rosterPhase}
           </div>
         </div>
 
@@ -200,7 +202,7 @@ export default function TeamBuilder({
             transition: "all 0.2s",
           }}
         >
-          SALVAR
+          {t.save}
         </button>
       </header>
 
@@ -325,7 +327,12 @@ export default function TeamBuilder({
               }}
             />
           </div>
-          <TeamStatsSummary accentColor={ac} avg={avg} />
+          <TeamStatsSummary
+            accentColor={ac}
+            avg={avg}
+            statsTitle={t.teamStats}
+            teamSubtitle={t.teamSubtitle}
+          />
         </div>
       </div>
 

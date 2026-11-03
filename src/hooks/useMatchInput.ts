@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { PR, VH, VW, vdist } from "@/constants/physics"
 import { selectClosestPlayerToBall } from "@/engine/ai"
-import type { GameControls, GS } from "@/types"
-import { getPlayRect } from "@/utils/canvasHelpers"
+import type { CameraView, GameControls, GS } from "@/types"
 
 export interface AimState {
   active: boolean
@@ -16,11 +15,13 @@ export interface AimState {
 export function useMatchInput({
   fieldRef,
   gsRef,
+  cameraRef,
   controls,
   onStateChange,
 }: {
   fieldRef: React.RefObject<HTMLDivElement | null>
   gsRef: React.MutableRefObject<GS>
+  cameraRef: React.MutableRefObject<CameraView>
   controls: GameControls
   onStateChange: () => void
 }) {
@@ -33,15 +34,12 @@ export function useMatchInput({
       if (!field) return
 
       const gs = gsRef.current
+      if (gs.finished || gs.endingPhase) return
       const rect = field.getBoundingClientRect()
-      const play = getPlayRect(rect.width, rect.height, false)
-      const lx = clientX - rect.left - play.x
-      const ly = clientY - rect.top - play.y
-
-      if (lx < 0 || ly < 0 || lx > play.w || ly > play.h) return
-
-      const mx = (lx / play.w) * VW
-      const my = (ly / play.h) * VH
+      const camera = cameraRef.current
+      const mx = camera.x + (clientX - rect.left - rect.width / 2) / camera.scale
+      const my = camera.y + (clientY - rect.top - rect.height / 2) / camera.scale
+      if (mx < 0 || my < 0 || mx > VW || my > VH) return
       const teamA = gs.pieces.filter((p) => p.team === "A")
       let best: number | null = null
       let bestD = PR * 1.6
@@ -65,13 +63,14 @@ export function useMatchInput({
         onStateChange()
       }
     },
-    [fieldRef, gsRef, onStateChange],
+    [cameraRef, fieldRef, gsRef, onStateChange],
   )
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
       const key = e.code
       if (key === "F3") {
+        if (gsRef.current.finished || gsRef.current.endingPhase) return
         e.preventDefault()
         gsRef.current.aiDebugEnabled = !gsRef.current.aiDebugEnabled
         onStateChange()
@@ -96,12 +95,13 @@ export function useMatchInput({
       keysRef.current.add(key)
 
       if (key === controls.selectNearest) {
+        if (gsRef.current.finished || gsRef.current.endingPhase) return
         selectClosestPlayerToBall(gsRef.current, "A")
         onStateChange()
       }
 
       if (key === controls.pause) {
-        if (gsRef.current.finished) return
+        if (gsRef.current.finished || gsRef.current.endingPhase) return
         gsRef.current.paused = !gsRef.current.paused
         onStateChange()
       }

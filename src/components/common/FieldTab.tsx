@@ -1,6 +1,6 @@
-import { BG_PRESETS, FIELD_SURFACE_OPTIONS } from "@/constants"
-import type { BgPreset, GameSettings } from "@/types"
-import { ColorPicker, NeonToggle } from "@/components/common"
+import { FIELD_SURFACE_OPTIONS } from "@/constants"
+import type { GameSettings } from "@/types"
+import { ColorPicker } from "@/components/common"
 
 interface FieldTabProps {
   settings: GameSettings

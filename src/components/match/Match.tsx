@@ -4,7 +4,7 @@ import type { GameSettings, MatchMode, SlotPiece } from "@/types"
 
 import { BG_PRESETS } from "@/constants"
 
-import { getPlayRect, useFieldSize } from "@/utils/canvasHelpers"
+import { useFieldSize } from "@/utils/canvasHelpers"
 
 import { useMatch } from "@/hooks/useMatch"
 
@@ -32,6 +32,8 @@ export default function Match({
 }) {
   const fieldRef = useRef<HTMLDivElement>(null)
 
+  const sceneRef = useRef<HTMLDivElement>(null)
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const { w: fw, h: fh } = useFieldSize(fieldRef)
@@ -45,14 +47,14 @@ export default function Match({
 
     fieldRef,
 
+    sceneRef,
+
     canvasRef,
 
     fw,
 
     fh,
   )
-
-  const playRect = getPlayRect(fw, fh, false)
 
   const lineColor = hud.flashColor ?? settings.fieldLineColor
 
@@ -67,8 +69,8 @@ export default function Match({
     >
       <MatchCanvas
         fieldRef={fieldRef}
+        sceneRef={sceneRef}
         canvasRef={canvasRef}
-        playRect={playRect}
         bgCss={BG_PRESETS[settings.bgPreset].css}
         lineColor={lineColor}
         fieldSurfaceColor={settings.fieldSurfaceColor}
@@ -79,6 +81,7 @@ export default function Match({
         kickoffCountdown={hud.kickoffCountdown}
         kickoffDuration={hud.kickoffDuration}
         kickoffPhase={hud.kickoffPhase}
+        endingProgress={hud.endingProgress}
         onFieldClick={selectPieceAt}
       />
       <MatchHud settings={settings} hud={hud} onPause={pauseToggle} />

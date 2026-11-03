@@ -2,18 +2,17 @@ import type { RefObject } from "react"
 
 import { FieldLines } from "@/components/common"
 
-import type { PlayRect } from "@/types"
 import type { KickoffPhase } from "@/types"
 
-import { CORNER_RADIUS, VW } from "@/constants/physics"
+import { CORNER_RADIUS, FIELD_SAFE_GAP, TOP_HUD_HEIGHT, VH, VW } from "@/constants/physics"
 import { getKickoffLightLevel } from "@/utils/kickoffLighting"
 
 export default function MatchCanvas({
   fieldRef,
 
-  canvasRef,
+  sceneRef,
 
-  playRect,
+  canvasRef,
 
   bgCss,
 
@@ -35,13 +34,15 @@ export default function MatchCanvas({
 
   kickoffPhase,
 
+  endingProgress,
+
   onFieldClick,
 }: {
   fieldRef: RefObject<HTMLDivElement | null>
 
-  canvasRef: RefObject<HTMLCanvasElement | null>
+  sceneRef: RefObject<HTMLDivElement | null>
 
-  playRect: PlayRect
+  canvasRef: RefObject<HTMLCanvasElement | null>
 
   bgCss: string
 
@@ -63,6 +64,8 @@ export default function MatchCanvas({
 
   kickoffPhase: KickoffPhase
 
+  endingProgress: number
+
   onFieldClick: (clientX: number, clientY: number) => void
 }) {
   const kickoffElapsed = kickoffDuration - kickoffCountdown
@@ -75,63 +78,81 @@ export default function MatchCanvas({
   return (
     <div
       ref={fieldRef}
-      style={{ position: "absolute", inset: 0, background: bgCss }}
+      style={{
+        position: "absolute",
+        top: TOP_HUD_HEIGHT + FIELD_SAFE_GAP,
+        left: 0,
+        width: "100%",
+        height: `calc(100% - ${TOP_HUD_HEIGHT + 2 * FIELD_SAFE_GAP}px)`,
+        overflow: "hidden",
+        background: bgCss,
+        borderRadius: CORNER_RADIUS,
+        boxShadow: "0 18px 48px rgba(0,0,0,0.42), 0 0 28px rgba(34,211,238,0.09)",
+      }}
     >
       <div
+        ref={sceneRef}
         style={{
           position: "absolute",
+          left: 0,
+          top: 0,
+          width: VW,
+          height: VH,
+          transformOrigin: "top left",
+          willChange: "transform",
 
-          left: playRect.x,
-
-          top: playRect.y,
-
-          width: playRect.w,
-
-          height: playRect.h,
-
-          zIndex: 2,
+          zIndex: 1,
 
           pointerEvents: "none",
 
-          transition: "filter 0.12s ease",
+          transition: "filter 0.12s ease, opacity 100ms linear",
+
+          opacity: 1 - endingProgress,
         }}
       >
-        <FieldLines w={playRect.w} h={playRect.h} color={lineColor} />
-      </div>
-      {fieldSurfaceColor && fieldSurfaceColor !== "rgba(0,0,0,0.0)" && (
+        {fieldSurfaceColor && fieldSurfaceColor !== "rgba(0,0,0,0.0)" && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: fieldSurfaceColor,
+              borderRadius: CORNER_RADIUS,
+              pointerEvents: "none",
+              zIndex: 0,
+              opacity: 1 - endingProgress,
+              transition: "opacity 100ms linear",
+            }}
+          />
+        )}
         <div
+          aria-hidden="true"
           style={{
             position: "absolute",
-
-            left: playRect.x,
-
-            top: playRect.y,
-
-            width: playRect.w,
-
-            height: playRect.h,
-
-            background: fieldSurfaceColor,
-
-            borderRadius: (CORNER_RADIUS / VW) * playRect.w,
-
-            pointerEvents: "none",
-
+            inset: 0,
             zIndex: 1,
+            borderRadius: CORNER_RADIUS,
+            pointerEvents: "none",
+            background: [
+              "radial-gradient(ellipse at 50% 45%, rgba(60,150,255,0.10) 0%, rgba(10,25,60,0.04) 48%, rgba(0,0,0,0.30) 100%)",
+              "linear-gradient(180deg, rgba(150,220,255,0.045), transparent 18%, transparent 82%, rgba(0,0,0,0.16))",
+              "linear-gradient(90deg, rgba(0,0,0,0.12), transparent 12%, transparent 88%, rgba(0,0,0,0.12))",
+            ].join(","),
+            boxShadow: "inset 0 0 70px rgba(0,0,0,0.22), inset 0 1px 16px rgba(100,190,255,0.07)",
           }}
         />
-      )}
-      {kickoffPhase === "intro" && kickoffCountdown > 0 && (
+        <div
+          style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none" }}
+        >
+          <FieldLines w={VW} h={VH} color={lineColor} />
+        </div>
+        {kickoffPhase === "intro" && kickoffCountdown > 0 && (
         <div
           aria-live="polite"
           style={{
             position: "absolute",
-            left: playRect.x,
-            top: playRect.y,
-            width: playRect.w,
-            height: playRect.h,
+            inset: 0,
             zIndex: 9,
-            borderRadius: (CORNER_RADIUS / VW) * playRect.w,
+            borderRadius: CORNER_RADIUS,
             pointerEvents: "none",
           }}
         >
@@ -194,30 +215,63 @@ export default function MatchCanvas({
             </div>
           </div>
         </div>
-      )}
-      <canvas
+        )}
+        {endingProgress > 0 && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 12,
+            borderRadius: CORNER_RADIUS,
+            background: "#02030a",
+            opacity: endingProgress,
+            pointerEvents: "none",
+            transition: "opacity 100ms linear",
+          }}
+        />
+        )}
+        <canvas
         ref={canvasRef}
         style={{
           position: "absolute",
 
           inset: 0,
 
-          width: "100%",
+          width: VW,
 
-          height: "100%",
+          height: VH,
 
           zIndex: 10,
 
           pointerEvents: "none",
         }}
-      />
+        />
+        <div
+          style={{ position: "absolute", inset: 0, zIndex: 11, pointerEvents: "auto" }}
+          onClick={(e) => onFieldClick(e.clientX, e.clientY)}
+        />
+      </div>
       <div
-        style={{ position: "absolute", inset: 0, zIndex: 11 }}
-        onClick={(e) => onFieldClick(e.clientX, e.clientY)}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 15,
+          borderRadius: "inherit",
+          border: `1px solid ${lineColor}70`,
+          boxShadow: [
+            `0 0 14px ${accentColor}38`,
+            `inset 0 0 22px ${lineColor}18`,
+            `inset 0 0 2px ${lineColor}88`,
+          ].join(","),
+          opacity: 1 - endingProgress,
+          pointerEvents: "none",
+        }}
       />
       <span
         style={{
-          position: "absolute",
+          position: "fixed",
 
           bottom: 8,
 
@@ -239,7 +293,7 @@ export default function MatchCanvas({
       {notification && (
         <div
           style={{
-            position: "absolute",
+            position: "fixed",
 
             top: "50%",
 

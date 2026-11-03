@@ -43,7 +43,6 @@ export interface AiBatchMetrics {
 
 function createHeadlessState(
   seed: number,
-  settings: GameSettings,
   durationSeconds: number,
 ): GS {
   const roles = FORMATION_PRESETS[0]?.roles ?? [
@@ -76,10 +75,10 @@ export function simulateAiMatch(
 ): AiMatchMetrics {
   const settings = options.settings ?? DEFAULT_SETTINGS
   const durationSeconds = Math.max(FIXED_DT, options.durationSeconds ?? 240)
-  const gs = createHeadlessState(seed, settings, durationSeconds)
+  const gs = createHeadlessState(seed, durationSeconds)
   const playerSlots = gs.pieces
     .filter((piece) => piece.team === "A")
-    .map((piece, index) => ({
+    .map((piece) => ({
       id: piece.id,
       type: piece.type,
       role: piece.role,

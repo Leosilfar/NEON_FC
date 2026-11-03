@@ -11,6 +11,8 @@ import type {
 
 import {
   FIXED_DT,
+  VH,
+  VW,
   NORMAL_MATCH_DURATION,
   MAX_FRAME_DT,
   MAX_STEPS_PER_FRAME,
@@ -22,12 +24,15 @@ import { stepMatchSimulation } from "@/engine/simulation"
 import { renderMatchFrame } from "@/components/match/renderMatchFrame"
 import { useMatchInput } from "@/hooks/useMatchInput"
 import { playSfx, setStadiumMode } from "@/utils/audio"
+import { applyCameraTransform, createCameraView, getCameraScale, updateCameraView } from "@/utils/matchCamera"
+import type { CameraView } from "@/types"
 
 export function useMatch(
   playerSlots: SlotPiece[],
   matchMode: MatchMode,
   settings: GameSettings,
   fieldRef: React.RefObject<HTMLDivElement | null>,
+  sceneRef: React.RefObject<HTMLDivElement | null>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   fw: number,
   fh: number,
@@ -39,6 +44,7 @@ export function useMatch(
   const lastTsRef = useRef<number>(0)
   const accRef = useRef(0)
   const nextHudSyncRef = useRef(0)
+  const cameraRef = useRef<CameraView>(createCameraView(fw, fh))
 
   useEffect(() => {
     settRef.current = settings
@@ -55,6 +61,8 @@ export function useMatch(
       notification: null,
       paused: false,
       finished: false,
+      endingPhase: gsRef.current.endingPhase,
+      endingProgress: gsRef.current.endingProgress,
       selectedId: gs.pieces.filter((p) => p.team === "A")[0]?.id ?? null,
       flashColor: null,
       goalColor: null,
@@ -90,6 +98,8 @@ export function useMatch(
       notification: gs.notification,
       paused: gs.paused,
       finished: gs.finished,
+      endingPhase: gs.endingPhase,
+      endingProgress: gs.endingProgress,
       selectedId: teamA[gs.selectedIdx]?.id ?? null,
       flashColor:
         gs.goalColor && performance.now() < gs.flashUntil ? gs.goalColor : null,
@@ -111,6 +121,8 @@ export function useMatch(
         prev.matchMode !== next.matchMode ||
         prev.paused !== next.paused ||
         prev.finished !== next.finished ||
+        prev.endingPhase !== next.endingPhase ||
+        Math.abs(prev.endingProgress - next.endingProgress) >= 0.04 ||
         prev.notification !== next.notification ||
         prev.goalColor !== next.goalColor ||
         prev.kickoffDuration !== next.kickoffDuration ||
@@ -133,6 +145,7 @@ export function useMatch(
   const { keysRef, selectPieceAt } = useMatchInput({
     fieldRef,
     gsRef,
+    cameraRef,
     controls: settRef.current.controls ?? DEFAULT_GAME_CONTROLS,
     onStateChange: () => publishHud(true),
   })
@@ -153,10 +166,19 @@ export function useMatch(
     const c = canvasRef.current
     if (!c) return
 
-    const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
-    c.width = Math.max(1, Math.round(fw * dpr))
-    c.height = Math.max(1, Math.round(fh * dpr))
+    const cameraScale = getCameraScale(fw, fh)
+    const dpr = Math.min(
+      Math.max(1, window.devicePixelRatio || 1) * cameraScale,
+      1.5,
+    )
+    c.width = Math.max(1, Math.round(VW * dpr))
+    c.height = Math.max(1, Math.round(VH * dpr))
   }, [fw, fh, canvasRef])
+
+  useEffect(() => {
+    cameraRef.current = createCameraView(fw, fh)
+    applyCameraTransform(sceneRef.current, cameraRef.current, fw, fh)
+  }, [fw, fh, sceneRef])
 
   const tick = useCallback(
     (ts: number) => {
@@ -182,7 +204,17 @@ export function useMatch(
         steps++
       }
 
-      if (gsRef.current.finished) setStadiumMode(false)
+      if (gsRef.current.finished || gsRef.current.endingPhase)
+        setStadiumMode(false)
+
+      cameraRef.current = updateCameraView(
+        cameraRef.current,
+        gsRef.current.ball,
+        frameDt,
+        fw,
+        fh,
+      )
+      applyCameraTransform(sceneRef.current, cameraRef.current, fw, fh)
 
       if (steps === MAX_STEPS_PER_FRAME) accRef.current = 0
 
@@ -207,7 +239,7 @@ export function useMatch(
 
       rafRef.current = requestAnimationFrame(tick)
     },
-    [canvasRef, handleSound, keysRef, publishHud],
+    [canvasRef, fw, fh, handleSound, keysRef, publishHud, sceneRef],
   )
 
   useEffect(() => {
@@ -219,16 +251,18 @@ export function useMatch(
   }, [tick])
 
   function pauseToggle() {
-    if (gsRef.current.finished) return
+    if (gsRef.current.finished || gsRef.current.endingPhase) return
     gsRef.current.paused = !gsRef.current.paused
     publishHud(true)
   }
 
   function restartGame() {
     gsRef.current = makeGS(playerSlotsRef.current, undefined, matchMode, true)
+    cameraRef.current = createCameraView(fw, fh)
+    applyCameraTransform(sceneRef.current, cameraRef.current, fw, fh)
     keysRef.current.clear()
     publishHud(true)
   }
 
-  return { hud, gsRef, pauseToggle, restartGame, selectPieceAt }
+  return { hud, gsRef, cameraRef, pauseToggle, restartGame, selectPieceAt }
 }

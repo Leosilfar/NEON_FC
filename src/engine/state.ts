@@ -7,7 +7,7 @@ import {
 } from "@/utils/tactics"
 import { createSeed, roll } from "@/engine/rng"
 
-const CENTER_CIRCLE_RADIUS = VW * 0.15
+const CENTER_CIRCLE_RADIUS = VH * 0.18
 const RANDOM_AWAY_PIECES: PieceType[] = [
   "triangle",
   "square",
@@ -95,13 +95,12 @@ export function makeGS(
   // Carrier object mutated by roll() — shares the seed so formation randomisation
   // is part of the same reproducible sequence as in-match randomness.
   const r = { rngState }
-  const binHome = homeFormation.map((s) => s?.role)
-  const homeNorm = computeHomeNormalized(binHome)
-
   const filledHome = [...homeFormation]
   while (filledHome.length < 5) {
     filledHome.push({ type: "circle", id: filledHome.length + 1, role: "MEI" })
   }
+  const binHome = filledHome.slice(0, 5).map((s) => s?.role)
+  const homeNorm = computeHomeNormalized(binHome)
 
   // HOME — left half, attacks right, rot = 0 (internally Team "A")
   const home = filledHome.slice(0, 5).map((s, i) => {
@@ -132,8 +131,6 @@ export function makeGS(
         : undefined
 
   if (resolvedAwayFormation) {
-    const binAway = resolvedAwayFormation.map((s) => s?.role)
-    const awayNorm = computeHomeNormalized(binAway)
     const filledAway = [...resolvedAwayFormation]
     while (filledAway.length < 5) {
       filledAway.push({
@@ -142,6 +139,8 @@ export function makeGS(
         role: "MEI",
       })
     }
+    const binAway = filledAway.slice(0, 5).map((s) => s?.role)
+    const awayNorm = computeHomeNormalized(binAway)
     opponentSlots = filledAway.slice(0, 5)
     away = filledAway.slice(0, 5).map((s, i) => {
       const canvas = awayToCanvas(awayNorm[i] ?? { x: 0.5, y: 0.5 })
@@ -191,8 +190,16 @@ export function makeGS(
     })
   }
 
+  const pieces = [...home, ...away]
+
   return {
-    pieces: [...home, ...away],
+    pieces,
+    homePositions: Object.fromEntries(
+      pieces.map((piece) => [
+        piece.id,
+        { x: piece.x, y: piece.y, rot: piece.rot ?? 0 },
+      ]),
+    ),
     ball: { x: VW / 2, y: VH / 2, vx: 0, vy: 0 },
     selectedIdx: 0,
     scoreA: 0,
@@ -201,6 +208,9 @@ export function makeGS(
     opponentSlots,
     paused: false,
     finished: false,
+    endingPhase: null,
+    endingProgress: 0,
+    endingElapsed: 0,
     timeLeft: matchMode === "normal" ? MATCH_SECS : Infinity,
     notification: null,
     notifEnd: 0,
@@ -231,6 +241,8 @@ export function makeGS(
     stuckBallDuration: 0,
     pieceMotionWatch: {},
     aiDecisionStates: {},
+    aiDecisionElapsed: 1 / 30,
+    aiSpinDirections: {},
     aiKickFlashUntil: {},
     aiKickCount: 0,
     aiPassCount: 0,

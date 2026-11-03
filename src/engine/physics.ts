@@ -336,9 +336,14 @@ export function piecePieceHit(
   p1: GPiece,
   p2: GPiece
 ): { nx: number; ny: number; pen: number } | null {
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  const broadphaseReach = PR * 3
+  if (Math.abs(dx) > broadphaseReach || Math.abs(dy) > broadphaseReach) {
+    return null
+  }
+
   if (p1.type === "circle" && p2.type === "circle") {
-    const dx = p2.x - p1.x
-    const dy = p2.y - p1.y
     const d = Math.hypot(dx, dy)
     const minD = PR * 2
     if (d > 0.01 && d < minD) return { nx: dx / d, ny: dy / d, pen: minD - d }
@@ -442,8 +447,8 @@ export function pieceAabb(p: GPiece) {
 }
 
 export function ballNearPieceAabb(p: GPiece, bx: number, by: number) {
-  const a = pieceAabb(p)
-  return bx + BR >= a.minX && bx - BR <= a.maxX && by + BR >= a.minY && by - BR <= a.maxY
+  const reach = PR * 1.5 + BR
+  return Math.abs(bx - p.x) <= reach && Math.abs(by - p.y) <= reach
 }
 
 /** Returns MTV for circle vs wall (axis-aligned). */
