@@ -1,87 +1,101 @@
 # NEON FC
 
-Jogo de futebol 2D com estética neon. Cinco jogadores por time, arena fechada com paredes, peças geométricas que giram e chutam a bola.
+NEON FC é um jogo de futebol 2D com estética neon e peças geométricas que se movimentam, giram e chutam a bola. Cada equipe tem até cinco peças. O campo tem paredes arredondadas, zonas de gol nas extremidades e uma câmera que acompanha a bola.
 
-## Stack
+## Recursos
 
-- **React 19** — menus e HUD
-- **Canvas 2D** — loop da partida (120 Hz timestep fixo, física com SAT)
-- **Vite 8 + TypeScript 5.7**
-- **Electron** — empacotamento desktop (Windows)
-- **Howler** — áudio
-- **Framer Motion** — animações de menu
+- Partidas rápidas e modo de treino.
+- Montagem de equipes, escolha de formações e definição de funções por peça.
+- IA tática com níveis de dificuldade, posicionamento por função, pressão, antecipação, passes e finalizações.
+- Controle direto de uma peça, com seleção de companheiro durante a partida.
+- Configurações de idioma, controles, áudio, campo e aparência.
+- Efeitos visuais neon, animações, música e efeitos sonoros.
+- Versão web com Vite e versão desktop para Windows com Electron.
 
-## Estrutura
+## Tecnologias
 
-```
-src/
-  engine/
-    simulation.ts # Coordena as fases de um passo fixo da partida
-    physics.ts    # Geometria, SAT, contatos e limites do campo
-    collision.ts # Contatos entre peças, bola e paredes
-    combat/
-      kicks.ts    # Execução dos chutes do jogador e da IA
-    state.ts      # Cria o estado inicial e os elencos
-    ai.ts         # Entrada pública e orquestração da IA
-    ai/
-      difficulty.ts # Perfis de dificuldade por equipe
-      perception.ts # Leitura da bola e estimativa de posse
-      goalkeeper.ts # Posicionamento e previsão do goleiro
-      positioning.ts # Formação e posicionamento de campo
-      strategy/     # Contexto, coordenação, alvos e escolha de ações
-      steering.ts   # Aceleração, movimento e separação
-      kicking.ts    # Escolha do alvo de chute e orientação da peça
-      harness.ts    # Métricas headless para análise da IA
-    rules/
-      matchFlow.ts  # Entrada estável para eventos e reinícios
-      goalEvents.ts # Transições e efeitos de gol
-      kickoff/      # Planejamento, movimento, recuperação e reinício
-    fx/
-      particles.ts  # Partículas e efeitos de colisão
-  components/
-    Menu/
-      settings/   # Tipos, traduções e painéis por aba
-    match/        # Canvas, HUD e renderização da partida
-    common/       # Componentes reutilizáveis
-    team-builder/ # Montagem do elenco e formação
-  context/        # Estado compartilhado da interface
-  hooks/          # Integração do motor com React e controles
-  utils/          # Áudio, canvas, táticas e persistência
-  constants/      # Dimensões físicas e configurações padrão
-  types/          # Tipos de estado, configurações e interface
-vite/
-  figmaPlugins.ts # Plugins de preview e metadados do Figma Make
+- **React 19** para menus, configurações e HUD.
+- **Canvas 2D** para desenhar peças, bola, efeitos e depuração da IA.
+- **TypeScript 5.7** e **Vite 8**.
+- **Electron** para empacotar a versão desktop.
+- **Howler** para música e efeitos sonoros.
+- **Framer Motion** para animações de interface.
+
+## Começar
+
+Requisitos: Node.js, pnpm e Git.
+
+```bash
+git clone https://github.com/Leosilfar/NEON_FC.git
+cd NEON_FC
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-### Limites entre módulos
-
-- O motor é dono do estado da partida (`GS`). `simulation.ts` coordena os passos e delega regras a módulos especializados.
-- `simulation.ts` controla a ordem temporal; `collision.ts`, `combat/kicks.ts` e `rules/kickoff/` executam suas respectivas fases.
-- Componentes e renderizadores exibem o estado e encaminham comandos; regras físicas e táticas vivem no engine.
-- A IA separa percepção, dificuldade, goleiro, posicionamento, coordenação coletiva, seleção de ações, movimento e execução de chutes. `engine/ai.ts` mantém a entrada pública do motor.
-- Cada aba das configurações tem um painel próprio; `SettingsScreen.tsx` mantém o estado temporário e decide qual painel renderizar.
-- `constants/physics.ts` é a fonte única das dimensões do campo. Alterar escala ou número de jogadores exige atualizar motor, táticas e interface em conjunto.
-- Plugins do Figma ficam em `vite/`, fora do código do jogo.
+O servidor de desenvolvimento do Vite fica disponível em `http://localhost:5173`.
 
 ## Comandos
 
 ```bash
-pnpm install       # instalar dependências
-pnpm dev           # servidor de desenvolvimento
-pnpm build         # build web
-pnpm typecheck     # verificação de tipos
-pnpm build:desktop # build Electron (Windows)
+pnpm dev             # iniciar o servidor de desenvolvimento
+pnpm typecheck       # verificar os tipos TypeScript
+pnpm build           # gerar a versão web em dist/
+pnpm preview         # visualizar localmente a versão web gerada
+pnpm desktop:run     # gerar o build web e abrir no Electron
+pnpm build:desktop   # gerar instalador e versão portátil para Windows
 ```
 
 ## Controles padrão
 
 | Ação | Tecla |
-|------|-------|
-| Mover | W A S D |
-| Girar | Q / E |
-| Selecionar mais próximo da bola | Tab |
-| Pausar | Esc |
+| --- | --- |
+| Mover a peça selecionada | W, A, S, D |
+| Girar a peça | Q / E |
+| Chutar ou passar | Espaço |
+| Selecionar a peça aliada mais próxima da bola | Tab |
+| Pausar ou continuar | Esc |
+| Mostrar ou ocultar depuração da IA | F3 |
+
+Os controles podem ser alterados nas configurações.
+
+## Estrutura do projeto
+
+```text
+src/
+  components/
+    Menu/                 # telas do menu e configurações
+      settings/            # painéis, tipos e traduções das configurações
+    match/                 # canvas, HUD, sobreposições e renderização
+    team-builder/          # montagem de elenco e formação
+    common/                # componentes compartilhados e linhas do campo
+  constants/               # dimensões do campo e configurações padrão
+  context/                 # estado compartilhado da interface
+  engine/
+    simulation.ts          # coordena cada passo da partida
+    state.ts               # cria o estado inicial e as equipes
+    physics.ts             # geometria, SAT e limites do campo
+    collision.ts           # contatos entre peças, bola e paredes
+    combat/kicks.ts        # chutes do jogador e da IA
+    ai.ts                  # entrada pública e orquestração da IA
+    ai/                    # percepção, estratégia, goleiros e movimento
+    rules/                 # gols, reinícios e fases de partida
+    fx/                    # partículas e efeitos de colisão
+  hooks/                   # loop de renderização e entrada do jogador
+  types/                   # tipos compartilhados do jogo e da interface
+  utils/                   # câmera, áudio, desenho, táticas e persistência
+electron/                  # processo principal e janela desktop
+vite/                      # plugins de preview e metadados do Figma Make
+```
+
+### Limites entre módulos
+
+- `GS` é o estado compartilhado da partida. `simulation.ts` controla a ordem dos passos e delega tarefas para física, colisões, chutes e regras.
+- A física roda com passo fixo de **120 Hz**, dividido em subpassos para resolver movimento e contatos. As decisões táticas da IA são atualizadas a **30 Hz**.
+- A IA separa percepção, dificuldade, coordenação de equipe, posicionamento, ações, movimento e execução dos chutes.
+- As formações iniciais usam posições normalizadas, calculadas a partir das funções das peças.
+- `constants/physics.ts` é a fonte única das dimensões do campo: **1800 × 900** unidades. A câmera acompanha a bola e mantém o HUD fixo na tela.
+- React cuida da interface e encaminha entradas; o motor da partida é executado no Canvas 2D.
 
 ## Licença
 
-MIT — © Leosilfar
+MIT. Consulte o arquivo [`LICENSE`](LICENSE).
